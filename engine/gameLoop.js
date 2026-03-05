@@ -2,7 +2,7 @@
 // This file contains ONLY the game loop logic
 // NO UI CODE HERE - PURE MATH ONLY
 
-// Process one turn (one quarter = 3 months)
+// Process one turn (one month)
 function processNextTurn() {
     const state = getGameState();
     if (!state) {
@@ -10,7 +10,7 @@ function processNextTurn() {
         return;
     }
     
-    console.log(`Processing turn ${state.game.turn} - Q${state.game.quarter} ${state.game.year}`);
+    console.log(`Processing turn ${state.game.turn} - ${getMonthName(state.game.month)} ${state.game.year}`);
     
     // Calculate new values based on current policies
     const newBudget = calculateBudget(state);
@@ -24,8 +24,9 @@ function processNextTurn() {
     state.economy = { ...state.economy, ...newEconomicIndicators };
     state.politics = { ...state.politics, ...newPoliticalMetrics };
     
-    // Update GDP based on growth
-    state.economy.gdp = Math.round(state.economy.gdp * (1 + state.economy.gdpGrowth));
+    // Update GDP based on growth (monthly growth rate)
+    const monthlyGrowthRate = state.economy.gdpGrowth / 12; // Convert annual to monthly
+    state.economy.gdp = Math.round(state.economy.gdp * (1 + monthlyGrowthRate));
     
     // Update debt
     state.economy.debt = newBudget.debt;
@@ -50,15 +51,24 @@ function processNextTurn() {
     return state;
 }
 
-// Advance the turn counter
+// Advance the turn counter (monthly)
 function advanceTurn(state) {
     state.game.turn++;
-    state.game.quarter++;
+    state.game.month++;
     
-    if (state.game.quarter > 4) {
-        state.game.quarter = 1;
+    if (state.game.month > 12) {
+        state.game.month = 1;
         state.game.year++;
     }
+}
+
+// Get month name for display
+function getMonthName(month) {
+    const months = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return months[month - 1] || 'January';
 }
 
 // Check for game over conditions

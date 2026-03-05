@@ -31,6 +31,11 @@ function setupEventListeners() {
         nextTurnBtn.addEventListener('click', nextTurn);
     }
     
+    const settingsBtn = document.getElementById('settings-btn');
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', toggleGraphPhysicsPanel);
+    }
+    
     // Modal buttons
     const applyBtn = document.getElementById('apply-btn');
     const cancelBtn = document.getElementById('cancel-btn');
@@ -62,6 +67,8 @@ function startGame() {
         if (typeof renderGameUI === 'function') {
             renderGameUI();
         }
+
+        ensureGraphPhysicsPanel();
         
         console.log('Game started');
     }
@@ -124,5 +131,121 @@ function closePolicyModal() {
     const modal = document.getElementById('policy-modal');
     if (modal) {
         modal.style.display = 'none';
+    }
+}
+
+function ensureGraphPhysicsPanel() {
+    if (document.getElementById('graph-physics-panel')) return;
+
+    const mainGame = document.getElementById('main-game');
+    if (!mainGame) return;
+
+    const panel = document.createElement('div');
+    panel.id = 'graph-physics-panel';
+    panel.className = 'physics-panel';
+    panel.style.display = 'none';
+
+    panel.innerHTML = `
+        <div class="physics-panel-header">
+            <strong>Graph Physics</strong>
+        </div>
+        <label>Repulsion <span id="phys-charge-val"></span></label>
+        <input id="phys-charge" type="range" min="-420" max="-80" step="10">
+        <label>Gravity <span id="phys-gravity-val"></span></label>
+        <input id="phys-gravity" type="range" min="0.005" max="0.12" step="0.005">
+        <label>Link Pull <span id="phys-link-val"></span></label>
+        <input id="phys-link" type="range" min="0.05" max="0.5" step="0.01">
+        <label>Link Distance <span id="phys-dist-val"></span></label>
+        <input id="phys-dist" type="range" min="120" max="320" step="5">
+        <button id="phys-reset-btn" type="button">Reset Defaults</button>
+    `;
+
+    mainGame.appendChild(panel);
+    bindGraphPhysicsPanel();
+    syncGraphPhysicsPanelValues();
+}
+
+function bindGraphPhysicsPanel() {
+    const charge = document.getElementById('phys-charge');
+    const gravity = document.getElementById('phys-gravity');
+    const link = document.getElementById('phys-link');
+    const distance = document.getElementById('phys-dist');
+    const resetBtn = document.getElementById('phys-reset-btn');
+
+    if (charge) {
+        charge.addEventListener('input', () => {
+            setGraphPhysicsSettings({ chargeStrength: parseFloat(charge.value) });
+            syncGraphPhysicsPanelValues();
+        });
+    }
+    if (gravity) {
+        gravity.addEventListener('input', () => {
+            setGraphPhysicsSettings({ gravityStrength: parseFloat(gravity.value) });
+            syncGraphPhysicsPanelValues();
+        });
+    }
+    if (link) {
+        link.addEventListener('input', () => {
+            const value = parseFloat(link.value);
+            setGraphPhysicsSettings({ linkStrengthMin: value * 0.35, linkStrengthMax: value });
+            syncGraphPhysicsPanelValues();
+        });
+    }
+    if (distance) {
+        distance.addEventListener('input', () => {
+            const far = parseFloat(distance.value);
+            setGraphPhysicsSettings({ linkDistanceFar: far, linkDistanceNear: Math.max(70, far * 0.58) });
+            syncGraphPhysicsPanelValues();
+        });
+    }
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            setGraphPhysicsSettings({
+                chargeStrength: -210,
+                gravityStrength: 0.045,
+                collisionStrength: 0.85,
+                collisionPadding: 12,
+                linkDistanceFar: 230,
+                linkDistanceNear: 130,
+                linkStrengthMin: 0.04,
+                linkStrengthMax: 0.28
+            });
+            syncGraphPhysicsPanelValues();
+        });
+    }
+}
+
+function syncGraphPhysicsPanelValues() {
+    if (typeof getGraphPhysicsSettings !== 'function') return;
+    const settings = getGraphPhysicsSettings();
+
+    const charge = document.getElementById('phys-charge');
+    const gravity = document.getElementById('phys-gravity');
+    const link = document.getElementById('phys-link');
+    const distance = document.getElementById('phys-dist');
+
+    if (charge) charge.value = settings.chargeStrength;
+    if (gravity) gravity.value = settings.gravityStrength;
+    if (link) link.value = settings.linkStrengthMax;
+    if (distance) distance.value = settings.linkDistanceFar;
+
+    const chargeVal = document.getElementById('phys-charge-val');
+    const gravityVal = document.getElementById('phys-gravity-val');
+    const linkVal = document.getElementById('phys-link-val');
+    const distVal = document.getElementById('phys-dist-val');
+
+    if (chargeVal) chargeVal.textContent = `${settings.chargeStrength.toFixed(0)}`;
+    if (gravityVal) gravityVal.textContent = `${settings.gravityStrength.toFixed(3)}`;
+    if (linkVal) linkVal.textContent = `${settings.linkStrengthMax.toFixed(2)}`;
+    if (distVal) distVal.textContent = `${settings.linkDistanceFar.toFixed(0)}px`;
+}
+
+function toggleGraphPhysicsPanel() {
+    ensureGraphPhysicsPanel();
+    const panel = document.getElementById('graph-physics-panel');
+    if (!panel) return;
+    panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+    if (panel.style.display !== 'none') {
+        syncGraphPhysicsPanelValues();
     }
 }

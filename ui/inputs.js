@@ -23,11 +23,12 @@ function previewPolicyChange(policyId, value) {
     const state = getGameState();
     if (!state) return;
     
-    // Store original value
-    const originalValue = state.policies[policyId];
+    // Store original value for both flat and nested policy ids.
+    const originalValue = getPolicyValue(policyId);
+    if (originalValue === null || originalValue === undefined) return;
     
     // Temporarily update for preview
-    state.policies[policyId] = value;
+    updatePolicyValue(policyId, value);
     
     // Calculate preview effects
     const previewBudget = calculateBudget(state);
@@ -37,7 +38,7 @@ function previewPolicyChange(policyId, value) {
     updatePreviewDisplay(previewBudget, previewPopulation);
     
     // Restore original value
-    state.policies[policyId] = originalValue;
+    updatePolicyValue(policyId, originalValue);
 }
 
 // Update preview display in modal
@@ -150,58 +151,6 @@ function setupFocusManagement() {
     }
 }
 
-// Handle tooltips
-function setupTooltips() {
-    const policyNodes = document.querySelectorAll('.policy-node');
-    
-    policyNodes.forEach(node => {
-        node.addEventListener('mouseenter', function(event) {
-            const policyId = this.dataset.policyId;
-            const state = getGameState();
-            
-            if (state && policyId) {
-                showTooltip(event, policyId, state.policies[policyId]);
-            }
-        });
-        
-        node.addEventListener('mouseleave', function() {
-            hideTooltip();
-        });
-    });
-}
-
-// Show tooltip for policy node
-function showTooltip(event, policyId, value) {
-    const tooltip = document.createElement('div');
-    tooltip.id = 'policy-tooltip';
-    tooltip.className = 'tooltip';
-    tooltip.innerHTML = `
-        <strong>${policyId.replace(/([A-Z])/g, ' $1').trim()}</strong><br>
-        Current value: ${value}%
-    `;
-    
-    tooltip.style.position = 'absolute';
-    tooltip.style.left = event.pageX + 10 + 'px';
-    tooltip.style.top = event.pageY - 30 + 'px';
-    tooltip.style.background = 'var(--bg-secondary)';
-    tooltip.style.border = '1px solid var(--glass-border)';
-    tooltip.style.borderRadius = '6px';
-    tooltip.style.padding = '0.5rem';
-    tooltip.style.fontSize = '0.8rem';
-    tooltip.style.zIndex = '3000';
-    tooltip.style.pointerEvents = 'none';
-    
-    document.body.appendChild(tooltip);
-}
-
-// Hide tooltip
-function hideTooltip() {
-    const tooltip = document.getElementById('policy-tooltip');
-    if (tooltip) {
-        tooltip.remove();
-    }
-}
-
 // Return to start screen
 function returnToStartScreen() {
     const startScreen = document.getElementById('start-screen');
@@ -210,6 +159,13 @@ function returnToStartScreen() {
     if (startScreen && mainGame) {
         mainGame.style.display = 'none';
         startScreen.style.display = 'flex';
+
+        if (typeof hideTooltip === 'function') {
+            hideTooltip();
+        }
+        if (typeof destroyForceGraph === 'function') {
+            destroyForceGraph();
+        }
         
         // Reset game state
         if (typeof initializeGameState === 'function') {
@@ -224,8 +180,6 @@ function initializeInputHandlers() {
     setupResizeHandler();
     setupContextMenuHandler();
     setupFocusManagement();
-    setupTooltips();
-    
     // Add policy slider event listener
     const policySlider = document.getElementById('policy-slider');
     if (policySlider) {
