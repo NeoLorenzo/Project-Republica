@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Republica: Portugal</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <div id="start-screen">
+            <h1>Project Republica: Portugal</h1>
+            <p>A political simulation game</p>
+            <button id="start-game-btn">Start Game</button>
+        </div>
+        
+        <div id="main-game" style="display: none;">
+            <div id="top-bar">
+                <div class="budget-info">
+                    <span id="income">Income: €0</span>
+                    <span id="expenditure">Expenditure: €0</span>
+                    <span id="deficit">Deficit: €0</span>
+                    <span id="debt">Debt: €0</span>
+                </div>
+                <div class="turn-info">
+                    <span id="turn-counter">Turn 1 - Q1 2024</span>
+                    <div class="action-points">
+                        <span id="action-points">3</span>
+                    </div>
+                </div>
+                <div class="top-buttons">
+                    <button id="charts-btn">📊</button>
+                    <button id="finances-btn">💰</button>
+                    <button id="policies-btn">📋</button>
+                    <button id="settings-btn">⚙️</button>
+                    <button id="next-turn-btn">➡️</button>
+                </div>
+            </div>
+            
+            <div id="radial-canvas">
+                <!-- Policy nodes will be dynamically added here -->
+            </div>
+        </div>
+        
+        <div id="policy-modal" style="display: none;">
+            <div class="modal-content">
+                <h3 id="modal-title">Policy Name</h3>
+                <p id="modal-description">Policy description</p>
+                
+                <div class="preview-section">
+                    <h4>Preview Changes:</h4>
+                    <div class="preview-grid">
+                        <div class="preview-item">
+                            <span>Income:</span>
+                            <span id="preview-income">€0M</span>
+                        </div>
+                        <div class="preview-item">
+                            <span>Expenditure:</span>
+                            <span id="preview-expenditure">€0M</span>
+                        </div>
+                        <div class="preview-item">
+                            <span>Deficit:</span>
+                            <span id="preview-deficit">€0M</span>
+                        </div>
+                        <div class="preview-item">
+                            <span>Happiness:</span>
+                            <span id="preview-happiness">0%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="slider-container">
+                    <label for="policy-slider">Intensity:</label>
+                    <input type="range" id="policy-slider" min="0" max="100" value="50">
+                    <span id="slider-value">50%</span>
+                </div>
+                <div class="modal-buttons">
+                    <button id="apply-btn">Apply</button>
+                    <button id="cancel-btn">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="engine/state.js"></script>
+    <script src="engine/rules.js"></script>
+    <script src="engine/gameLoop.js"></script>
+    <script src="ui/render.js"></script>
+    <script src="ui/inputs.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>

@@ -1,0 +1,328 @@
+/* Democracy 4 inspired color palette */
+:root {
+    /* Background colors */
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --bg-tertiary: #404040;
+    
+    /* Text colors */
+    --text-primary: #ffffff;
+    --text-secondary: #cccccc;
+    --text-muted: #888888;
+    
+    /* Status colors */
+    --positive: #4ade80;
+    --negative: #f87171;
+    --neutral: #60a5fa;
+    --warning: #fbbf24;
+    
+    /* Node colors */
+    --economy: #3b82f6;
+    --welfare: #10b981;
+    --law-order: #ef4444;
+    --education: #8b5cf6;
+    --health: #06b6d4;
+    --transport: #f59e0b;
+    
+    /* Glassmorphism */
+    --glass-bg: rgba(255, 255, 255, 0.1);
+    --glass-border: rgba(255, 255, 255, 0.2);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    color: var(--text-primary);
+    height: 100vh;
+    overflow: hidden;
+}
+
+#app {
+    width: 100%;
+    height: 100vh;
+    position: relative;
+}
+
+/* Start Screen */
+#start-screen {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+}
+
+#start-screen h1 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+#start-screen p {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    color: var(--text-secondary);
+}
+
+#start-game-btn {
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+    background: var(--economy);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#start-game-btn:hover {
+    background: #2563eb;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* Main Game */
+#main-game {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Top Bar */
+#top-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--glass-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 2rem;
+    z-index: 1000;
+}
+
+.budget-info {
+    display: flex;
+    gap: 2rem;
+}
+
+.budget-info span {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.turn-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.action-points {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--warning);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.top-buttons {
+    display: flex;
+    gap: 1rem;
+}
+
+.top-buttons button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1.2rem;
+}
+
+.top-buttons button:hover {
+    background: var(--economy);
+    transform: scale(1.1);
+}
+
+/* Radial Canvas */
+#radial-canvas {
+    flex: 1;
+    margin-top: 80px;
+    position: relative;
+    background: radial-gradient(circle at center, rgba(59, 130, 246, 0.1) 0%, transparent 50%);
+}
+
+/* Policy Nodes */
+.policy-node {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    border: 3px solid var(--economy);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.8rem;
+    text-align: center;
+}
+
+.policy-node:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+}
+
+.policy-node .icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.2rem;
+}
+
+.policy-node .label {
+    font-weight: 600;
+}
+
+/* Modal */
+#policy-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.modal-content {
+    background: var(--bg-secondary);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 2rem;
+    width: 400px;
+    backdrop-filter: blur(10px);
+}
+
+.modal-content h3 {
+    margin-bottom: 1rem;
+    color: var(--economy);
+}
+
+.modal-content p {
+    margin-bottom: 1.5rem;
+    color: var(--text-secondary);
+}
+
+.preview-section {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: var(--bg-primary);
+    border-radius: 8px;
+    border: 1px solid var(--glass-border);
+}
+
+.preview-section h4 {
+    margin-bottom: 0.5rem;
+    color: var(--neutral);
+    font-size: 0.9rem;
+}
+
+.preview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.preview-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+}
+
+.preview-item span:first-child {
+    color: var(--text-secondary);
+}
+
+.preview-item span:last-child {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.slider-container {
+    margin-bottom: 2rem;
+}
+
+.slider-container label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+#policy-slider {
+    width: 100%;
+    margin-bottom: 0.5rem;
+}
+
+#slider-value {
+    color: var(--economy);
+    font-weight: bold;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+.modal-buttons button {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+#apply-btn {
+    background: var(--positive);
+    color: white;
+}
+
+#apply-btn:hover {
+    background: #22c55e;
+}
+
+#cancel-btn {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+#cancel-btn:hover {
+    background: var(--negative);
+}
