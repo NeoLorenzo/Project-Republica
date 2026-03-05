@@ -12,11 +12,11 @@ This project is built entirely with web technologies to maximize UI potential an
 * **Visualization:** D3.js v7.9.0 for force-directed graph physics simulation
 * **Charting/Graphs:** D3.js for node relationships, potential Chart.js integration for data charts
 
-## 🏗 Architecture & Separation of Concerns
+## Architecture & Separation of Concerns
 To ensure the game remains fun and easy to balance, the codebase strictly separates the mathematical simulation (The Engine) from the visual dashboard (The UI).
 
 ### 1. The System Dynamics Engine (`/engine`)
-The core of the game is a node-based graph with CSV-driven relationship simulation.
+The core of the game is a node-based graph with CSV-driven relationships. 
 * **Nodes:** Represent metrics (e.g., `GDP`, `Healthcare_Quality`, `Socialist_Voter_Happiness`).
 * **Policies:** Player-controlled levers (e.g., `Income_Tax_Rate`, `Public_Transport_Subsidies`).
 * **Relationships:** CSV-defined mathematical relationships with weights and inertia values
@@ -152,7 +152,7 @@ The game features **22 adjustable policies** across 8 categories:
 - **Relationship Processing**: Each turn processes CSV-defined relationships with inertia-based evolution
 
 ### 🗂️ **CSV-Based Relationship System**
-The game now uses a data-driven approach for defining policy and metric relationships:
+The game uses a data-driven approach for defining policy and metric relationships:
 
 #### **Relationship Data Structure** (`relationships.csv`)
 - **Source**: Policy or metric node that influences others
@@ -161,7 +161,7 @@ The game now uses a data-driven approach for defining policy and metric relation
 - **Inertia**: Resistance to change (1-10, higher = slower evolution)
 
 #### **Key Features**
-- **32 Defined Relationships**: Covering all major policy-to-metric interactions
+- **49 Defined Relationships**: Covering all major policy-to-metric interactions
 - **Inertia-Based Evolution**: Metrics change gradually based on historical inertia
 - **Base-Anchored Targets**: Policies create target values that metrics drift toward
 - **Async Loading**: CSV data loads asynchronously with start button state management
@@ -203,6 +203,7 @@ carbonTax,inflation,0.25,2         # Carbon tax causes inflation
 - **Repulsion Force**: Controls how strongly nodes push apart (-80 to -420)
 - **Gravity Strength**: Pulls nodes toward center (0.005 to 0.12)
 - **Link Pull**: Controls attraction between connected nodes (0.05 to 0.5)
+- **Link Distance**: Preferred distance between connected nodes (120px to 320px)
 - **Reset Defaults**: Restore original physics parameters
 
 ### 📊 **Real-time Preview System**
@@ -235,7 +236,7 @@ When adjusting policies in the modal:
 2. **Assess Situation**: Review economic indicators and population metrics
 3. **Adjust Policies**: Click policy nodes, adjust sliders, preview changes
 4. **Apply Changes**: Confirm policy adjustments (consumes action points)
-5. **Advance Turn**: Click "Next Turn" to process quarterly results
+5. **Advance Turn**: Click "Next Turn" to process monthly results
 6. **Monitor Progress**: Watch indicators change based on policy decisions
 7. **Achieve Goals**: Work toward victory conditions or avoid game over
 

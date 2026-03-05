@@ -34,7 +34,6 @@ const POLICY_NODE_IDS = [
     'laborPolicy.minimumWage',
     'laborPolicy.fourDayWeek',
     'laborPolicy.youthJobs',
-    'taxPolicy.irsBrackets',
     'taxPolicy.nhrRegime',
     'taxPolicy.wealthTax'
 ];
@@ -43,6 +42,10 @@ const SIMULATED_NODE_DEFAULTS = {
     gdp: { min: 180000, max: 420000, k: 1.6, modifierRange: 0.28 },
     unemployment: { min: 0, max: 25, k: 1.7, modifierRange: 0.22 },
     inflation: { min: 0, max: 10, k: 1.7, modifierRange: 0.22 },
+    consumption: { min: 0, max: 100, k: 1.6, modifierRange: 0.30 },
+    investment: { min: 0, max: 100, k: 1.55, modifierRange: 0.28 },
+    govSpending: { min: 0, max: 100, k: 1.6, modifierRange: 0.30 },
+    netExports: { min: 0, max: 100, k: 1.5, modifierRange: 0.26 },
     happiness: { min: 0, max: 100, k: 1.6, modifierRange: 0.35 },
     health: { min: 0, max: 100, k: 1.6, modifierRange: 0.32 },
     education: { min: 0, max: 100, k: 1.6, modifierRange: 0.30 },
@@ -129,6 +132,9 @@ function parseCsv(csvText) {
     const parsedEdges = [];
 
     for (let i = 1; i < lines.length; i++) {
+        if (lines[i].startsWith('#')) {
+            continue;
+        }
         const row = parseCsvLine(lines[i]);
         if (row.length !== 4) {
             throw new Error(`Invalid CSV row ${i + 1}: expected 4 columns.`);
@@ -254,9 +260,13 @@ function getStateValueByNodeId(state, nodeId) {
 
 function buildNodeConfigsFromState(state) {
     const nextConfigs = {};
+    const anchoredBaseValues = state?.simulationConfig?.baseValues || {};
     Object.entries(SIMULATED_NODE_DEFAULTS).forEach(([nodeId, defaults]) => {
+        const anchored = anchoredBaseValues[nodeId];
         const raw = getStateValueByNodeId(state, nodeId);
-        const baseValue = normalizeWithRange(raw, defaults.min, defaults.max);
+        const baseValue = Number.isFinite(anchored)
+            ? clamp01(anchored)
+            : normalizeWithRange(raw, defaults.min, defaults.max);
         nextConfigs[nodeId] = {
             ...defaults,
             baseValue: clamp01(baseValue)
@@ -439,8 +449,25 @@ function projectOneStepRawMetrics(state) {
     return raw;
 }
 
-function getCurrentGraphLinks() {
-    return getGraphLinksFromRules();
+function getCurrentGraphLinks(state) {
+    const baseLinks = getGraphLinksFromRules();
+    if (!state) return baseLinks;
+
+    return baseLinks.map((link) => {
+        const sourceNorm = getNormalizedValueByNodeId(state, link.source);
+        const effectiveImpact = (Number.isFinite(sourceNorm) ? sourceNorm : 0) * link.weight;
+        const effectiveMagnitude = Math.abs(effectiveImpact);
+
+        return {
+            ...link,
+            baseWeight: link.weight,
+            sourceNorm: Number.isFinite(sourceNorm) ? sourceNorm : 0,
+            effectiveImpact,
+            weight: effectiveImpact,
+            magnitude: effectiveMagnitude,
+            polarity: effectiveImpact > 0 ? 'positive' : (effectiveImpact < 0 ? 'negative' : 'neutral')
+        };
+    });
 }
 
 function getPolicyPercent(state, policyId) {

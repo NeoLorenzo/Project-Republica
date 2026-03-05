@@ -9,6 +9,10 @@ const portugalState = {
         gdpGrowth: 0.023, // 2.3% annual growth (2023 actual)
         unemployment: 6.5, // percentage (actual rate)
         inflation: 2.3, // percentage (actual rate)
+        consumption: 65, // aggregate demand component (0-100)
+        investment: 50, // aggregate demand component (0-100)
+        govSpending: 55, // behavioral stimulus perception (0-100)
+        netExports: 45, // aggregate demand component (0-100)
         debt: 264000, // million euros (99% of GDP - actual debt ratio)
         deficit: 12000, // million euros (projected 2024 deficit)
     },
@@ -106,7 +110,6 @@ const portugalState = {
             youthJobs: 38, // Youth employment programs
         },
         taxPolicy: {
-            irsBrackets: 35, // IRS tax bracket adjustments
             nhrRegime: 40, // Non-habitual resident regime
             wealthTax: 25, // Wealth tax considerations
         }
@@ -122,7 +125,6 @@ const portugalState = {
             carbonTax: { baseRevenue: 12000, gdpScaled: true },
             'housingPolicy.alTaxes': { baseRevenue: 9000, gdpScaled: true },
             'housingPolicy.goldenVisa': { baseRevenue: 5000, gdpScaled: true },
-            'taxPolicy.irsBrackets': { baseRevenue: 8000, gdpScaled: true },
             'taxPolicy.nhrRegime': { baseRevenue: 3000, gdpScaled: true },
             'taxPolicy.wealthTax': { baseRevenue: 1000, gdpScaled: true }
         },
@@ -146,9 +148,27 @@ const portugalState = {
             'laborPolicy.minimumWage': { baseCost: 12000, gdpScaled: true },
             'laborPolicy.fourDayWeek': { baseCost: 10000, gdpScaled: true },
             'laborPolicy.youthJobs': { baseCost: 11000, gdpScaled: true },
-            'taxPolicy.irsBrackets': { baseCost: 2000, gdpScaled: true },
             'taxPolicy.nhrRegime': { baseCost: 1500, gdpScaled: true },
             'taxPolicy.wealthTax': { baseCost: 800, gdpScaled: true }
+        }
+    },
+
+    // Tier 1 behavioral node base anchors (normalized 0..1).
+    simulationConfig: {
+        baseValues: {
+            gdp: 0.3625,
+            unemployment: 0.26,
+            inflation: 0.23,
+            happiness: 0.58,
+            health: 0.65,
+            education: 0.62,
+            safety: 0.78,
+            youthIndependence: 0.35,
+            rentBurden: 0.45,
+            consumption: 0.65,
+            investment: 0.50,
+            govSpending: 0.55,
+            netExports: 0.45
         }
     }
 };

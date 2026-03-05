@@ -1,4 +1,4 @@
-// D3 force graph renderer for policy and outcome nodes.
+﻿// D3 force graph renderer for policy and outcome nodes.
 // This file contains ONLY visualization/simulation lifecycle logic.
 
 let forceGraphContext = {
@@ -34,40 +34,45 @@ const LINK_VISUAL_MAGNITUDE_MAX = 4.0;
 
 function getOutcomeGraphNodes(state) {
     return [
-        { id: 'gdp', name: 'GDP', icon: '📈', value: `€${(state.economy.gdp / 1000).toFixed(1)}B`, color: 'var(--economy)', nodeType: 'outcome' },
-        { id: 'health', name: 'Health', icon: '❤️', value: `${state.population.health}%`, color: 'var(--health)', nodeType: 'outcome' },
-        { id: 'happiness', name: 'Happiness', icon: '😊', value: `${state.population.happiness}%`, color: 'var(--welfare)', nodeType: 'outcome' },
-        { id: 'education', name: 'Education', icon: '🎓', value: `${state.population.education}%`, color: 'var(--education)', nodeType: 'outcome' },
-        { id: 'safety', name: 'Safety', icon: '🛡️', value: `${state.population.safety}%`, color: 'var(--law-order)', nodeType: 'outcome' },
-        { id: 'unemployment', name: 'Unemployment', icon: '👥', value: `${state.economy.unemployment.toFixed(1)}%`, color: 'var(--warning)', nodeType: 'outcome' },
-        { id: 'inflation', name: 'Inflation', icon: '📊', value: `${state.economy.inflation.toFixed(1)}%`, color: 'var(--neutral)', nodeType: 'outcome' }
+        { id: 'gdp', name: 'GDP', icon: '\u{1F4C8}', value: `€${(state.economy.gdp / 1000).toFixed(1)}B`, color: 'var(--economy)', nodeType: 'outcome' },
+        { id: 'health', name: 'Health', icon: '\u2764\uFE0F', value: `${state.population.health}%`, color: 'var(--health)', nodeType: 'outcome' },
+        { id: 'happiness', name: 'Happiness', icon: '\u{1F60A}', value: `${state.population.happiness}%`, color: 'var(--welfare)', nodeType: 'outcome' },
+        { id: 'education', name: 'Education', icon: '\u{1F393}', value: `${state.population.education}%`, color: 'var(--education)', nodeType: 'outcome' },
+        { id: 'safety', name: 'Safety', icon: '\u{1F6E1}\uFE0F', value: `${state.population.safety}%`, color: 'var(--law-order)', nodeType: 'outcome' },
+        { id: 'unemployment', name: 'Unemployment', icon: '\u{1F465}', value: `${state.economy.unemployment.toFixed(1)}%`, color: 'var(--warning)', nodeType: 'outcome' },
+        { id: 'inflation', name: 'Inflation', icon: '\u{1F4CA}', value: `${state.economy.inflation.toFixed(1)}%`, color: 'var(--neutral)', nodeType: 'outcome' },
+        { id: 'consumption', name: 'Consumption', icon: '\u{1F6D2}', value: `${Math.round(state.economy.consumption)}%`, color: 'var(--economy)', nodeType: 'outcome' },
+        { id: 'investment', name: 'Investment', icon: '\u{1F3D7}\uFE0F', value: `${Math.round(state.economy.investment)}%`, color: 'var(--economy)', nodeType: 'outcome' },
+        { id: 'govSpending', name: 'Gov Stimulus', icon: '\u{1F3DB}\uFE0F', value: `${Math.round(state.economy.govSpending)}%`, color: 'var(--transport)', nodeType: 'outcome' },
+        { id: 'netExports', name: 'Net Exports', icon: '\u{1F6A2}', value: `${Math.round(state.economy.netExports)}%`, color: 'var(--neutral)', nodeType: 'outcome' },
+        { id: 'rentBurden', name: 'Rent Burden', icon: '\u{1F3D8}\uFE0F', value: `${state.population.rentBurden}%`, color: 'var(--warning)', nodeType: 'outcome' },
+        { id: 'youthIndependence', name: 'Youth Indep.', icon: '\u{1F3E1}', value: `${state.population.youthIndependence}%`, color: 'var(--neutral)', nodeType: 'outcome' }
     ];
 }
 
 function getPolicyGraphNodes() {
     return [
-        { id: 'incomeTax', name: 'Income Tax', icon: '💰', color: 'var(--economy)', nodeType: 'policy' },
-        { id: 'corporateTax', name: 'Corporate Tax', icon: '🏢', color: 'var(--economy)', nodeType: 'policy' },
-        { id: 'vat', name: 'VAT', icon: '🛒', color: 'var(--economy)', nodeType: 'policy' },
-        { id: 'healthcareSpending', name: 'Healthcare', icon: '🏥', color: 'var(--welfare)', nodeType: 'policy' },
-        { id: 'educationSpending', name: 'Education', icon: '🎓', color: 'var(--welfare)', nodeType: 'policy' },
-        { id: 'welfareSpending', name: 'Welfare', icon: '🤝', color: 'var(--welfare)', nodeType: 'policy' },
-        { id: 'transportSpending', name: 'Transport', icon: '🚗', color: 'var(--transport)', nodeType: 'policy' },
-        { id: 'digitalInfrastructure', name: 'Digital', icon: '💻', color: 'var(--transport)', nodeType: 'policy' },
-        { id: 'policeSpending', name: 'Police', icon: '👮', color: 'var(--law-order)', nodeType: 'policy' },
-        { id: 'justiceSpending', name: 'Justice', icon: '⚖️', color: 'var(--law-order)', nodeType: 'policy' },
-        { id: 'greenEnergy', name: 'Green Energy', icon: '🌱', color: 'var(--health)', nodeType: 'policy' },
-        { id: 'carbonTax', name: 'Carbon Tax', icon: '🏭', color: 'var(--health)', nodeType: 'policy' },
-        { id: 'housingPolicy.maisHabitacao', name: 'Mais Habitacao', icon: '🏠', color: 'var(--warning)', nodeType: 'policy' },
-        { id: 'housingPolicy.goldenVisa', name: 'Golden Visa', icon: '📋', color: 'var(--warning)', nodeType: 'policy' },
-        { id: 'housingPolicy.alTaxes', name: 'AL Taxes', icon: '💼', color: 'var(--warning)', nodeType: 'policy' },
-        { id: 'housingPolicy.rentControl', name: 'Rent Control', icon: '🏘️', color: 'var(--warning)', nodeType: 'policy' },
-        { id: 'laborPolicy.minimumWage', name: 'Minimum Wage', icon: '💵', color: 'var(--neutral)', nodeType: 'policy' },
-        { id: 'laborPolicy.fourDayWeek', name: '4-Day Week', icon: '📅', color: 'var(--neutral)', nodeType: 'policy' },
-        { id: 'laborPolicy.youthJobs', name: 'Youth Jobs', icon: '🧑‍💼', color: 'var(--neutral)', nodeType: 'policy' },
-        { id: 'taxPolicy.irsBrackets', name: 'IRS Brackets', icon: '📝', color: 'var(--economy)', nodeType: 'policy' },
-        { id: 'taxPolicy.nhrRegime', name: 'NHR Regime', icon: '🏘️', color: 'var(--economy)', nodeType: 'policy' },
-        { id: 'taxPolicy.wealthTax', name: 'Wealth Tax', icon: '💎', color: 'var(--economy)', nodeType: 'policy' }
+        { id: 'incomeTax', name: 'Income Tax', icon: '\u{1F4B0}', color: 'var(--economy)', nodeType: 'policy' },
+        { id: 'corporateTax', name: 'Corporate Tax', icon: '\u{1F3E2}', color: 'var(--economy)', nodeType: 'policy' },
+        { id: 'vat', name: 'VAT', icon: '\u{1F9FE}', color: 'var(--economy)', nodeType: 'policy' },
+        { id: 'healthcareSpending', name: 'Healthcare', icon: '\u{1F3E5}', color: 'var(--welfare)', nodeType: 'policy' },
+        { id: 'educationSpending', name: 'Education', icon: '\u{1F393}', color: 'var(--welfare)', nodeType: 'policy' },
+        { id: 'welfareSpending', name: 'Welfare', icon: '\u{1F91D}', color: 'var(--welfare)', nodeType: 'policy' },
+        { id: 'transportSpending', name: 'Transport', icon: '\u{1F686}', color: 'var(--transport)', nodeType: 'policy' },
+        { id: 'digitalInfrastructure', name: 'Digital', icon: '\u{1F4BB}', color: 'var(--transport)', nodeType: 'policy' },
+        { id: 'policeSpending', name: 'Police', icon: '\u{1F46E}', color: 'var(--law-order)', nodeType: 'policy' },
+        { id: 'justiceSpending', name: 'Justice', icon: '\u2696\uFE0F', color: 'var(--law-order)', nodeType: 'policy' },
+        { id: 'greenEnergy', name: 'Green Energy', icon: '\u{1F331}', color: 'var(--health)', nodeType: 'policy' },
+        { id: 'carbonTax', name: 'Carbon Tax', icon: '\u{1F3ED}', color: 'var(--health)', nodeType: 'policy' },
+        { id: 'housingPolicy.maisHabitacao', name: 'Mais Habitacao', icon: '\u{1F3E0}', color: 'var(--warning)', nodeType: 'policy' },
+        { id: 'housingPolicy.goldenVisa', name: 'Golden Visa', icon: '\u{1F4DC}', color: 'var(--warning)', nodeType: 'policy' },
+        { id: 'housingPolicy.alTaxes', name: 'AL Taxes', icon: '\u{1F4BC}', color: 'var(--warning)', nodeType: 'policy' },
+        { id: 'housingPolicy.rentControl', name: 'Rent Control', icon: '\u{1F3D8}\uFE0F', color: 'var(--warning)', nodeType: 'policy' },
+        { id: 'laborPolicy.minimumWage', name: 'Minimum Wage', icon: '\u{1F4B5}', color: 'var(--neutral)', nodeType: 'policy' },
+        { id: 'laborPolicy.fourDayWeek', name: '4-Day Week', icon: '\u{1F4C6}', color: 'var(--neutral)', nodeType: 'policy' },
+        { id: 'laborPolicy.youthJobs', name: 'Youth Jobs', icon: '\u{1F9D1}\u200D\u{1F4BC}', color: 'var(--neutral)', nodeType: 'policy' },
+        { id: 'taxPolicy.nhrRegime', name: 'NHR Regime', icon: '\u{1F3D8}\uFE0F', color: 'var(--economy)', nodeType: 'policy' },
+        { id: 'taxPolicy.wealthTax', name: 'Wealth Tax', icon: '\u{1F48E}', color: 'var(--economy)', nodeType: 'policy' }
     ];
 }
 
@@ -195,6 +200,61 @@ function assignLinkCurvature(links) {
             link.curveOffset = (index - midpoint) * step;
         });
     });
+}
+
+// Node size score combines direct connectivity and neighbor influence (eigenvector-like).
+function computeNodeSizingScores(nodes, links) {
+    const nodeIds = nodes.map((node) => node.id);
+    const degreeMap = new Map(nodeIds.map((id) => [id, 0]));
+    const adjacency = new Map(nodeIds.map((id) => [id, []]));
+
+    links.forEach((link) => {
+        const sourceId = getEndpointId(link.source);
+        const targetId = getEndpointId(link.target);
+        if (!degreeMap.has(sourceId) || !degreeMap.has(targetId)) return;
+
+        degreeMap.set(sourceId, (degreeMap.get(sourceId) || 0) + 1);
+        degreeMap.set(targetId, (degreeMap.get(targetId) || 0) + 1);
+
+        const edgeWeight = Math.max(0.05, link.magnitude || Math.abs(link.weight) || 1);
+        adjacency.get(sourceId).push({ id: targetId, weight: edgeWeight });
+        adjacency.get(targetId).push({ id: sourceId, weight: edgeWeight });
+    });
+
+    const rawDegrees = nodeIds.map((id) => degreeMap.get(id) || 0);
+    const maxDegree = Math.max(1, ...rawDegrees);
+    const baseScore = new Map(
+        nodeIds.map((id) => [id, ((degreeMap.get(id) || 0) / maxDegree) + 0.1])
+    );
+
+    const scores = new Map(baseScore);
+    const neighborMix = 0.55;
+    const iterations = 8;
+
+    for (let i = 0; i < iterations; i++) {
+        const nextScores = new Map();
+        nodeIds.forEach((id) => {
+            const neighbors = adjacency.get(id) || [];
+            if (!neighbors.length) {
+                nextScores.set(id, baseScore.get(id) || 0.1);
+                return;
+            }
+
+            let weightedSum = 0;
+            let totalWeight = 0;
+            neighbors.forEach((neighbor) => {
+                weightedSum += (scores.get(neighbor.id) || 0) * neighbor.weight;
+                totalWeight += neighbor.weight;
+            });
+
+            const neighborInfluence = totalWeight > 0 ? (weightedSum / totalWeight) : 0;
+            const next = ((baseScore.get(id) || 0.1) * (1 - neighborMix)) + (neighborInfluence * neighborMix);
+            nextScores.set(id, next);
+        });
+        nextScores.forEach((value, id) => scores.set(id, value));
+    }
+
+    return { degreeMap, scoreMap: scores };
 }
 
 function getLinkPath(link) {
@@ -336,24 +396,21 @@ function renderForceGraph(state) {
     const isTopologyChanged = topologySignature !== forceGraphContext.lastTopologySignature;
     forceGraphContext.lastTopologySignature = topologySignature;
 
-    const degreeMap = new Map(nodes.map((node) => [node.id, 0]));
-    links.forEach((link) => {
-        degreeMap.set(link.source, (degreeMap.get(link.source) || 0) + 1);
-        degreeMap.set(link.target, (degreeMap.get(link.target) || 0) + 1);
-    });
-    const degreeValues = [...degreeMap.values()];
-    const minDegree = Math.min(...degreeValues);
-    const maxDegree = Math.max(...degreeValues);
+    const { degreeMap, scoreMap } = computeNodeSizingScores(nodes, links);
+    const sizingValues = [...scoreMap.values()];
+    const minScore = Math.min(...sizingValues);
+    const maxScore = Math.max(...sizingValues);
     const radiusScale = d3.scaleLinear()
-        .domain([minDegree, maxDegree > minDegree ? maxDegree : minDegree + 1])
+        .domain([minScore, maxScore > minScore ? maxScore : minScore + 0.0001])
         .range([26, 56]);
     nodes.forEach((node) => {
         node.connectionCount = degreeMap.get(node.id) || 0;
-        node.visualRadius = radiusScale(node.connectionCount);
+        node.influenceScore = scoreMap.get(node.id) || 0;
+        node.visualRadius = radiusScale(node.influenceScore);
     });
 
     const maxMagnitude = Math.max(0.01, ...links.map((link) => link.magnitude));
-    const thicknessScale = d3.scaleSqrt().domain([0, LINK_VISUAL_MAGNITUDE_MAX]).range([0.9, 7.2]).clamp(true);
+    const thicknessScale = d3.scaleSqrt().domain([0, LINK_VISUAL_MAGNITUDE_MAX]).range([0.9, 7.8]).clamp(true);
 
     forceGraphContext.linkSelection = forceGraphContext.linkLayer
         .selectAll('path.force-link')
@@ -361,10 +418,18 @@ function renderForceGraph(state) {
         .join('path')
         .attr('class', 'force-link')
         .attr('fill', 'none')
-        .attr('stroke', (d) => (d.weight >= 0 ? '#4ade80' : '#f87171'))
+        .attr('stroke', (d) => (d.weight > 0 ? '#4ade80' : (d.weight < 0 ? '#f87171' : '#94a3b8')))
         .attr('stroke-width', (d) => thicknessScale(d.magnitude))
-        .attr('marker-end', (d) => (d.weight >= 0 ? 'url(#force-arrow-positive)' : 'url(#force-arrow-negative)'))
-        .attr('stroke-opacity', (d) => 0.35 + Math.min(0.55, d.magnitude / LINK_VISUAL_MAGNITUDE_MAX));
+        .attr('marker-end', (d) => (
+            d.magnitude < 0.001
+                ? null
+                : (d.weight >= 0 ? 'url(#force-arrow-positive)' : 'url(#force-arrow-negative)')
+        ))
+        .attr('stroke-opacity', (d) => (
+            d.magnitude < 0.001
+                ? 0
+                : Math.min(0.95, 0.30 + (d.magnitude / LINK_VISUAL_MAGNITUDE_MAX))
+        ));
 
     const dragBehavior = d3
         .drag()
@@ -497,3 +562,5 @@ function destroyForceGraph() {
         lastTopologySignature: ''
     };
 }
+
+

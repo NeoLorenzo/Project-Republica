@@ -100,6 +100,24 @@ function showOutcomeTooltip(event, node, state) {
         case 'inflation':
             details = 'Target: 2.0%';
             break;
+        case 'consumption':
+            details = 'Household spending demand channel';
+            break;
+        case 'investment':
+            details = 'Business and capital formation climate';
+            break;
+        case 'govSpending':
+            details = 'Perceived public-project stimulus';
+            break;
+        case 'netExports':
+            details = 'Trade balance competitiveness channel';
+            break;
+        case 'rentBurden':
+            details = 'Household rent pressure index';
+            break;
+        case 'youthIndependence':
+            details = 'Young adults able to live independently';
+            break;
     }
 
     tooltip.innerHTML = `
@@ -202,7 +220,6 @@ function getPolicyDescription(policyId) {
         'laborPolicy.minimumWage': 'Minimum wage policy intensity.',
         'laborPolicy.fourDayWeek': '4-day workweek trial intensity.',
         'laborPolicy.youthJobs': 'Youth employment program intensity.',
-        'taxPolicy.irsBrackets': 'IRS bracket progression policy intensity.',
         'taxPolicy.nhrRegime': 'NHR regime policy intensity.',
         'taxPolicy.wealthTax': 'Wealth taxation policy intensity.'
     };
