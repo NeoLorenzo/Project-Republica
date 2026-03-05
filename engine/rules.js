@@ -1,179 +1,234 @@
 // Mathematical relationships between game variables
-// This file contains ONLY the rules and equations
+// CSV-driven simulation math with bounded logistic targeting and inertia.
 // NO UI CODE HERE - PURE MATH ONLY
 
-// Multipliers and relationships
-const multipliers = {
-    // Economic multipliers
-    economy: {
-        incomeTaxMultiplier: -0.8, // Higher tax reduces GDP growth
-        corporateTaxMultiplier: -0.6, // Corporate tax affects investment
-        unemploymentMultiplier: -0.5, // Unemployment affects happiness
-        inflationMultiplier: -0.3, // Inflation affects purchasing power
-        vatInflationMultiplier: 0.35 // VAT changes feed into prices
-    },
-    
-    // Social multipliers
-    social: {
-        healthcareMultiplier: 0.7, // Healthcare spending affects health
-        educationMultiplier: 0.6, // Education spending affects education
-        welfareMultiplier: 0.5, // Welfare affects happiness
-    },
-    
-    // Infrastructure multipliers
-    infrastructure: {
-        transportMultiplier: 0.4, // Transport affects economy
-        digitalMultiplier: 0.3, // Digital affects productivity
-    },
-    
-    // Law & Order multipliers
-    lawOrder: {
-        policeMultiplier: 0.6, // Police spending affects safety
-        justiceMultiplier: 0.4, // Justice affects stability
-    },
-    
-    // Environmental multipliers
-    environment: {
-        greenEnergyMultiplier: 0.3, // Green energy affects health
-        carbonTaxMultiplier: -0.2, // Carbon tax affects economy
-        carbonTaxInflationMultiplier: 0.25 // Carbon tax can raise near-term prices
-    },
-
-    // Housing policy multipliers
-    housing: {
-        maisHabitacaoGrowthMultiplier: 0.25, // Housing supply supports growth
-        goldenVisaGrowthMultiplier: 0.2, // Foreign capital supports growth
-        goldenVisaHappinessMultiplier: -0.3, // Can worsen affordability pressure
-        alTaxesHappinessMultiplier: 0.22, // Helps residents through rental regulation
-        rentControlHappinessMultiplier: 0.28 // Improves affordability
-    },
-
-    // Labor policy multipliers
-    labor: {
-        minimumWageHappinessMultiplier: 0.35, // Improves purchasing power
-        minimumWageUnemploymentMultiplier: 0.2, // Can increase labor costs
-        fourDayWeekHappinessMultiplier: 0.3, // Work-life balance gain
-        fourDayWeekUnemploymentMultiplier: -0.12, // Work sharing can lower unemployment
-        youthJobsUnemploymentMultiplier: -0.5 // Youth jobs reduce unemployment
-    },
-
-    // Tax-policy multipliers
-    taxPolicy: {
-        irsBracketsDebtMultiplier: -0.35, // More progressive bands can improve fiscal balance
-        nhrRegimeGrowthMultiplier: 0.22, // Attracts talent/capital
-        nhrRegimeDebtMultiplier: 0.18, // Tax expenditure cost
-        wealthTaxDebtMultiplier: -0.3, // Raises revenue
-        wealthTaxGrowthMultiplier: -0.16 // Small drag on investment
-    }
+const relationshipLoadState = {
+    loaded: false,
+    loading: false,
+    error: null
 };
 
-// Relationship metadata used by the D3 force graph.
-// We derive weights from the multiplier table so simulation math remains the source of truth.
-const relationshipRuleBlueprints = [
-    { source: 'incomeTax', target: 'gdp', channel: 'economy', driver: 'incomeTaxMultiplier' },
-    { source: 'corporateTax', target: 'gdp', channel: 'economy', driver: 'corporateTaxMultiplier' },
-    { source: 'vat', target: 'inflation', channel: 'economy', driver: 'vatInflationMultiplier' },
-    { source: 'unemployment', target: 'happiness', channel: 'economy', driver: 'unemploymentMultiplier' },
-    { source: 'inflation', target: 'happiness', channel: 'economy', driver: 'inflationMultiplier' },
-    { source: 'healthcareSpending', target: 'health', channel: 'social', driver: 'healthcareMultiplier' },
-    { source: 'educationSpending', target: 'education', channel: 'social', driver: 'educationMultiplier' },
-    { source: 'welfareSpending', target: 'happiness', channel: 'social', driver: 'welfareMultiplier' },
-    { source: 'transportSpending', target: 'gdp', channel: 'infrastructure', driver: 'transportMultiplier' },
-    { source: 'digitalInfrastructure', target: 'gdp', channel: 'infrastructure', driver: 'digitalMultiplier' },
-    { source: 'policeSpending', target: 'safety', channel: 'lawOrder', driver: 'policeMultiplier' },
-    { source: 'justiceSpending', target: 'safety', channel: 'lawOrder', driver: 'justiceMultiplier' },
-    { source: 'greenEnergy', target: 'health', channel: 'environment', driver: 'greenEnergyMultiplier' },
-    { source: 'carbonTax', target: 'gdp', channel: 'environment', driver: 'carbonTaxMultiplier' },
-    { source: 'carbonTax', target: 'inflation', channel: 'environment', driver: 'carbonTaxInflationMultiplier' },
+let relationshipEdges = [];
+let edgesByTarget = new Map();
+let relationshipNodeIds = new Set();
+let nodeConfigs = {};
+const ACCOUNTING_TARGET_BLOCKLIST = new Set(['income', 'expenditure', 'deficit', 'debt']);
 
-    { source: 'housingPolicy.maisHabitacao', target: 'gdp', channel: 'housing', driver: 'maisHabitacaoGrowthMultiplier' },
-    { source: 'housingPolicy.goldenVisa', target: 'gdp', channel: 'housing', driver: 'goldenVisaGrowthMultiplier' },
-    { source: 'housingPolicy.goldenVisa', target: 'happiness', channel: 'housing', driver: 'goldenVisaHappinessMultiplier' },
-    { source: 'housingPolicy.alTaxes', target: 'happiness', channel: 'housing', driver: 'alTaxesHappinessMultiplier' },
-    { source: 'housingPolicy.rentControl', target: 'happiness', channel: 'housing', driver: 'rentControlHappinessMultiplier' },
-
-    { source: 'laborPolicy.minimumWage', target: 'happiness', channel: 'labor', driver: 'minimumWageHappinessMultiplier' },
-    { source: 'laborPolicy.minimumWage', target: 'unemployment', channel: 'labor', driver: 'minimumWageUnemploymentMultiplier' },
-    { source: 'laborPolicy.fourDayWeek', target: 'happiness', channel: 'labor', driver: 'fourDayWeekHappinessMultiplier' },
-    { source: 'laborPolicy.fourDayWeek', target: 'unemployment', channel: 'labor', driver: 'fourDayWeekUnemploymentMultiplier' },
-    { source: 'laborPolicy.youthJobs', target: 'unemployment', channel: 'labor', driver: 'youthJobsUnemploymentMultiplier' },
-
-    { source: 'taxPolicy.irsBrackets', target: 'debt', channel: 'taxPolicy', driver: 'irsBracketsDebtMultiplier' },
-    { source: 'taxPolicy.nhrRegime', target: 'gdp', channel: 'taxPolicy', driver: 'nhrRegimeGrowthMultiplier' },
-    { source: 'taxPolicy.nhrRegime', target: 'debt', channel: 'taxPolicy', driver: 'nhrRegimeDebtMultiplier' },
-    { source: 'taxPolicy.wealthTax', target: 'debt', channel: 'taxPolicy', driver: 'wealthTaxDebtMultiplier' },
-    { source: 'taxPolicy.wealthTax', target: 'gdp', channel: 'taxPolicy', driver: 'wealthTaxGrowthMultiplier' }
+const POLICY_NODE_IDS = [
+    'incomeTax',
+    'corporateTax',
+    'vat',
+    'healthcareSpending',
+    'educationSpending',
+    'welfareSpending',
+    'transportSpending',
+    'digitalInfrastructure',
+    'policeSpending',
+    'justiceSpending',
+    'greenEnergy',
+    'carbonTax',
+    'housingPolicy.maisHabitacao',
+    'housingPolicy.goldenVisa',
+    'housingPolicy.alTaxes',
+    'housingPolicy.rentControl',
+    'laborPolicy.minimumWage',
+    'laborPolicy.fourDayWeek',
+    'laborPolicy.youthJobs',
+    'taxPolicy.irsBrackets',
+    'taxPolicy.nhrRegime',
+    'taxPolicy.wealthTax'
 ];
 
-function getMultiplierByDriver(driver) {
-    for (const category of Object.keys(multipliers)) {
-        if (Object.prototype.hasOwnProperty.call(multipliers[category], driver)) {
-            return multipliers[category][driver];
+const SIMULATED_NODE_DEFAULTS = {
+    gdp: { min: 180000, max: 420000, k: 1.6, modifierRange: 0.28 },
+    unemployment: { min: 0, max: 25, k: 1.7, modifierRange: 0.22 },
+    inflation: { min: 0, max: 10, k: 1.7, modifierRange: 0.22 },
+    happiness: { min: 0, max: 100, k: 1.6, modifierRange: 0.35 },
+    health: { min: 0, max: 100, k: 1.6, modifierRange: 0.32 },
+    education: { min: 0, max: 100, k: 1.6, modifierRange: 0.30 },
+    safety: { min: 0, max: 100, k: 1.5, modifierRange: 0.28 },
+    youthIndependence: { min: 0, max: 100, k: 1.6, modifierRange: 0.30 },
+    rentBurden: { min: 0, max: 100, k: 1.6, modifierRange: 0.35 }
+};
+
+function clamp01(value) {
+    return Math.max(0, Math.min(1, value));
+}
+
+function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+}
+
+function normalizeWithRange(value, min, max) {
+    if (!Number.isFinite(value) || max <= min) return 0;
+    return clamp01((value - min) / (max - min));
+}
+
+function denormalizeWithRange(value, min, max) {
+    return min + (clamp01(value) * (max - min));
+}
+
+function logistic(x, k = 1.6) {
+    return 1 / (1 + Math.exp(-k * x));
+}
+
+function parseCsvLine(line) {
+    const out = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+            if (inQuotes && line[i + 1] === '"') {
+                current += '"';
+                i++;
+            } else {
+                inQuotes = !inQuotes;
+            }
+            continue;
         }
+        if (ch === ',' && !inQuotes) {
+            out.push(current.trim());
+            current = '';
+            continue;
+        }
+        current += ch;
     }
-    return 0;
+    out.push(current.trim());
+    return out;
 }
 
-function buildRelationshipRules() {
-    return relationshipRuleBlueprints
-    .filter((rule) => rule && rule.source && rule.target && rule.source !== rule.target)
-    .map((rule) => ({
-        source: rule.source,
-        target: rule.target,
-        channel: rule.channel,
-        driver: rule.driver,
-        weight: getMultiplierByDriver(rule.driver),
-        direct: true
-    }));
+function getKnownNodeIds() {
+    return new Set([
+        ...POLICY_NODE_IDS,
+        ...Object.keys(SIMULATED_NODE_DEFAULTS),
+        'approval',
+        'stability',
+        'corruption'
+    ]);
 }
 
-const relationshipRules = buildRelationshipRules();
+function parseCsv(csvText) {
+    const lines = csvText
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+
+    if (lines.length < 2) {
+        throw new Error('relationships.csv must contain a header and at least one row.');
+    }
+
+    const header = parseCsvLine(lines[0]);
+    const expected = ['Source', 'Target', 'Weight', 'Inertia'];
+    if (header.length !== expected.length || expected.some((h, idx) => header[idx] !== h)) {
+        throw new Error('Invalid CSV header. Expected: Source,Target,Weight,Inertia');
+    }
+
+    const knownNodes = getKnownNodeIds();
+    const seenPairs = new Set();
+    const parsedEdges = [];
+
+    for (let i = 1; i < lines.length; i++) {
+        const row = parseCsvLine(lines[i]);
+        if (row.length !== 4) {
+            throw new Error(`Invalid CSV row ${i + 1}: expected 4 columns.`);
+        }
+
+        const [source, target, weightRaw, inertiaRaw] = row;
+        const weight = Number(weightRaw);
+        const inertia = Number(inertiaRaw);
+        const pairKey = `${source}->${target}`;
+
+        if (!knownNodes.has(source)) throw new Error(`Unknown Source "${source}" on row ${i + 1}.`);
+        if (!knownNodes.has(target)) throw new Error(`Unknown Target "${target}" on row ${i + 1}.`);
+        if (ACCOUNTING_TARGET_BLOCKLIST.has(target)) {
+            throw new Error(`Invalid Target "${target}" on row ${i + 1}. Accounting targets are forbidden in CSV.`);
+        }
+        if (source === target) throw new Error(`Self-link "${source}" on row ${i + 1} is not allowed.`);
+        if (!Number.isFinite(weight)) throw new Error(`Invalid Weight "${weightRaw}" on row ${i + 1}.`);
+        if (!Number.isInteger(inertia) || inertia < 1) throw new Error(`Invalid Inertia "${inertiaRaw}" on row ${i + 1}.`);
+        if (seenPairs.has(pairKey)) throw new Error(`Duplicate edge "${pairKey}" on row ${i + 1}.`);
+
+        seenPairs.add(pairKey);
+        parsedEdges.push({
+            source,
+            target,
+            weight,
+            inertia,
+            driver: `csv:${source}->${target}`
+        });
+    }
+
+    return parsedEdges;
+}
+
+function rebuildEdgeIndexes(edges) {
+    edgesByTarget = new Map();
+    relationshipNodeIds = new Set();
+
+    edges.forEach((edge) => {
+        relationshipNodeIds.add(edge.source);
+        relationshipNodeIds.add(edge.target);
+        if (!edgesByTarget.has(edge.target)) edgesByTarget.set(edge.target, []);
+        edgesByTarget.get(edge.target).push(edge);
+    });
+}
+
+async function loadRelationshipsCsv(url = 'engine/relationships.csv') {
+    relationshipLoadState.loading = true;
+    relationshipLoadState.loaded = false;
+    relationshipLoadState.error = null;
+
+    try {
+        const response = await fetch(url, { cache: 'no-store' });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status} while loading ${url}`);
+        }
+
+        const text = await response.text();
+        const parsed = parseCsv(text);
+        relationshipEdges = parsed;
+        rebuildEdgeIndexes(relationshipEdges);
+
+        relationshipLoadState.loading = false;
+        relationshipLoadState.loaded = true;
+        relationshipLoadState.error = null;
+        return relationshipEdges;
+    } catch (error) {
+        relationshipEdges = [];
+        rebuildEdgeIndexes(relationshipEdges);
+        relationshipLoadState.loading = false;
+        relationshipLoadState.loaded = false;
+        relationshipLoadState.error = error?.message || 'Unknown error while loading relationships CSV.';
+        throw error;
+    }
+}
+
+function isRelationshipDataReady() {
+    return relationshipLoadState.loaded === true && relationshipEdges.length > 0;
+}
 
 function getRelationshipRules() {
-    return relationshipRules.map((rule) => ({ ...rule }));
+    return relationshipEdges.map((edge) => ({ ...edge }));
 }
 
 function getGraphLinksFromRules() {
-    return getRelationshipRules()
-    .filter((rule) => rule.direct)
-    .map((rule) => ({
-        source: rule.source,
-        target: rule.target,
-        weight: rule.weight,
-        channel: rule.channel,
-        driver: rule.driver,
-        direct: rule.direct,
-        polarity: rule.weight >= 0 ? 'positive' : 'negative',
-        magnitude: Math.abs(rule.weight)
+    if (!isRelationshipDataReady()) return [];
+    return relationshipEdges.map((edge) => ({
+        source: edge.source,
+        target: edge.target,
+        weight: edge.weight,
+        inertia: edge.inertia,
+        driver: edge.driver,
+        direct: true,
+        polarity: edge.weight >= 0 ? 'positive' : 'negative',
+        magnitude: Math.abs(edge.weight)
     }));
 }
 
-const dynamicStrengthConfig = {
-    incomeTax: { baseline: 23, scale: 30, mode: 'up' },
-    corporateTax: { baseline: 19, scale: 28, mode: 'up' },
-    vat: { baseline: 23, scale: 30, mode: 'up' },
-    healthcareSpending: { baseline: 55, scale: 35 },
-    educationSpending: { baseline: 50, scale: 35 },
-    welfareSpending: { baseline: 48, scale: 35 },
-    transportSpending: { baseline: 42, scale: 35 },
-    digitalInfrastructure: { baseline: 52, scale: 35 },
-    policeSpending: { baseline: 63, scale: 35 },
-    justiceSpending: { baseline: 51, scale: 35 },
-    greenEnergy: { baseline: 38, scale: 35 },
-    carbonTax: { baseline: 18, scale: 30, mode: 'up' },
-    'housingPolicy.maisHabitacao': { baseline: 35, scale: 30 },
-    'housingPolicy.goldenVisa': { baseline: 25, scale: 30 },
-    'housingPolicy.alTaxes': { baseline: 40, scale: 30 },
-    'housingPolicy.rentControl': { baseline: 30, scale: 30 },
-    'laborPolicy.minimumWage': { baseline: 45, scale: 30 },
-    'laborPolicy.fourDayWeek': { baseline: 20, scale: 28 },
-    'laborPolicy.youthJobs': { baseline: 38, scale: 30 },
-    'taxPolicy.irsBrackets': { baseline: 35, scale: 30, mode: 'up' },
-    'taxPolicy.nhrRegime': { baseline: 40, scale: 30, mode: 'both' },
-    'taxPolicy.wealthTax': { baseline: 25, scale: 30, mode: 'up' },
-    unemployment: { baseline: 6.5, scale: 4 },
-    inflation: { baseline: 2.3, scale: 2.5 }
-};
+function getInboundEdges(targetId) {
+    return edgesByTarget.get(targetId) || [];
+}
 
 function getStateValueByNodeId(state, nodeId) {
     if (!state || !nodeId) return null;
@@ -183,299 +238,303 @@ function getStateValueByNodeId(state, nodeId) {
         let current = state.policies;
         for (const part of parts) {
             if (!current || typeof current !== 'object' || !Object.prototype.hasOwnProperty.call(current, part)) {
-                current = null;
-                break;
+                return null;
             }
             current = current[part];
         }
         return typeof current === 'number' ? current : null;
     }
 
-    if (state.policies && typeof state.policies[nodeId] === 'number') {
-        return state.policies[nodeId];
-    }
-
-    const outcomeResolvers = {
-        gdp: () => state.economy?.gdp,
-        health: () => state.population?.health,
-        happiness: () => state.population?.happiness,
-        debt: () => state.economy?.debt,
-        education: () => state.population?.education,
-        safety: () => state.population?.safety,
-        unemployment: () => state.economy?.unemployment,
-        inflation: () => state.economy?.inflation
-    };
-
-    const resolver = outcomeResolvers[nodeId];
-    const value = resolver ? resolver() : null;
-    return typeof value === 'number' ? value : null;
+    if (state.policies && typeof state.policies[nodeId] === 'number') return state.policies[nodeId];
+    if (state.economy && typeof state.economy[nodeId] === 'number') return state.economy[nodeId];
+    if (state.population && typeof state.population[nodeId] === 'number') return state.population[nodeId];
+    if (state.politics && typeof state.politics[nodeId] === 'number') return state.politics[nodeId];
+    return null;
 }
 
-function getCurrentGraphLinks(state) {
-    return getGraphLinksFromRules().map((link) => {
-        const config = dynamicStrengthConfig[link.source];
-        if (!config) return { ...link };
-
-        const currentValue = getStateValueByNodeId(state, link.source);
-        if (currentValue === null || currentValue === undefined) return { ...link };
-
-        const normalizedDelta = (currentValue - config.baseline) / Math.max(1, config.scale);
-        let strengthMultiplier = 1;
-
-        if (config.mode === 'up') {
-            strengthMultiplier = normalizedDelta >= 0
-                ? 1 + normalizedDelta
-                : 1 + (normalizedDelta * 0.8);
-        } else if (config.mode === 'down') {
-            strengthMultiplier = normalizedDelta <= 0
-                ? 1 + Math.abs(normalizedDelta)
-                : 1 - (normalizedDelta * 0.8);
-        } else {
-            strengthMultiplier = 1 + Math.abs(normalizedDelta);
-        }
-
-        strengthMultiplier = Math.max(0.2, Math.min(4.5, strengthMultiplier));
-        const dynamicWeight = link.weight * strengthMultiplier;
-
-        return {
-            ...link,
-            weight: dynamicWeight,
-            magnitude: Math.abs(dynamicWeight)
+function buildNodeConfigsFromState(state) {
+    const nextConfigs = {};
+    Object.entries(SIMULATED_NODE_DEFAULTS).forEach(([nodeId, defaults]) => {
+        const raw = getStateValueByNodeId(state, nodeId);
+        const baseValue = normalizeWithRange(raw, defaults.min, defaults.max);
+        nextConfigs[nodeId] = {
+            ...defaults,
+            baseValue: clamp01(baseValue)
         };
+    });
+    nodeConfigs = nextConfigs;
+    return nodeConfigs;
+}
+
+function initializeSimulationNodes(state) {
+    if (!state) return;
+    const configs = buildNodeConfigsFromState(state);
+    const simNodes = {};
+    Object.keys(configs).forEach((nodeId) => {
+        simNodes[nodeId] = {
+            current: configs[nodeId].baseValue,
+            target: configs[nodeId].baseValue
+        };
+    });
+
+    state.simulation = {
+        nodes: simNodes
+    };
+}
+
+function ensureSimulationState(state) {
+    if (!state) return;
+    if (!state.simulation || !state.simulation.nodes) {
+        initializeSimulationNodes(state);
+        return;
+    }
+
+    if (Object.keys(nodeConfigs).length === 0) {
+        buildNodeConfigsFromState(state);
+    }
+
+    Object.keys(nodeConfigs).forEach((nodeId) => {
+        if (!state.simulation.nodes[nodeId]) {
+            const cfg = nodeConfigs[nodeId];
+            state.simulation.nodes[nodeId] = {
+                current: cfg.baseValue,
+                target: cfg.baseValue
+            };
+        }
     });
 }
 
-// Calculate budget based on policies
+function getNormalizedValueByNodeId(state, nodeId, nodeSnapshot) {
+    const sourceValue = getStateValueByNodeId(state, nodeId);
+
+    if (POLICY_NODE_IDS.includes(nodeId)) {
+        return clamp01((sourceValue ?? 0) / 100);
+    }
+
+    if (nodeSnapshot && nodeSnapshot[nodeId]) {
+        return clamp01(nodeSnapshot[nodeId].current);
+    }
+
+    if (state.simulation && state.simulation.nodes && state.simulation.nodes[nodeId]) {
+        return clamp01(state.simulation.nodes[nodeId].current);
+    }
+
+    const cfg = nodeConfigs[nodeId];
+    if (cfg && Number.isFinite(sourceValue)) {
+        return normalizeWithRange(sourceValue, cfg.min, cfg.max);
+    }
+
+    return 0;
+}
+
+function computeRawImpactSum(state, targetId, nodeSnapshot) {
+    const inboundEdges = getInboundEdges(targetId);
+    if (!inboundEdges.length) return 0;
+    return inboundEdges.reduce((sum, edge) => {
+        const sourceNorm = getNormalizedValueByNodeId(state, edge.source, nodeSnapshot);
+        return sum + (edge.weight * sourceNorm);
+    }, 0);
+}
+
+function computeTargetValueFromRaw(rawImpact, config) {
+    const modifier = logistic(rawImpact, config.k) - 0.5;
+    const scaledModifier = modifier * 2 * config.modifierRange;
+    return clamp01(config.baseValue + scaledModifier);
+}
+
+function computeEffectiveInertia(inboundEdges) {
+    if (!inboundEdges || inboundEdges.length === 0) return 3;
+    let weightedSum = 0;
+    let magnitudeSum = 0;
+    inboundEdges.forEach((edge) => {
+        const magnitude = Math.abs(edge.weight);
+        weightedSum += edge.inertia * magnitude;
+        magnitudeSum += magnitude;
+    });
+    if (magnitudeSum <= 0) return 3;
+    return Math.max(1, weightedSum / magnitudeSum);
+}
+
+function applyInertiaStep(current, target, inertia) {
+    const safeInertia = Math.max(1, inertia || 1);
+    return clamp01(current + ((target - current) / safeInertia));
+}
+
+function computeNextSimulationNodes(state, nodeSnapshot) {
+    const nextNodes = {};
+    Object.keys(nodeConfigs).forEach((nodeId) => {
+        const current = getNormalizedValueByNodeId(state, nodeId, nodeSnapshot);
+        const inboundEdges = getInboundEdges(nodeId);
+        const rawImpact = computeRawImpactSum(state, nodeId, nodeSnapshot);
+        const target = computeTargetValueFromRaw(rawImpact, nodeConfigs[nodeId]);
+        const inertia = computeEffectiveInertia(inboundEdges);
+        const nextCurrent = applyInertiaStep(current, target, inertia);
+        nextNodes[nodeId] = { current: nextCurrent, target };
+    });
+    return nextNodes;
+}
+
+function syncStateFromSimulation(state, previousGdpNorm) {
+    if (!state?.simulation?.nodes) return;
+
+    Object.entries(nodeConfigs).forEach(([nodeId, cfg]) => {
+        const normValue = state.simulation.nodes[nodeId]?.current ?? cfg.baseValue;
+        const rawValue = denormalizeWithRange(normValue, cfg.min, cfg.max);
+
+        if (state.economy && Object.prototype.hasOwnProperty.call(state.economy, nodeId)) {
+            state.economy[nodeId] = nodeId === 'gdp' || nodeId === 'debt'
+                ? Math.round(rawValue)
+                : Math.round(rawValue * 10) / 10;
+            return;
+        }
+
+        if (state.population && Object.prototype.hasOwnProperty.call(state.population, nodeId)) {
+            state.population[nodeId] = Math.round(rawValue);
+        }
+    });
+
+    if (state.economy && state.simulation.nodes.gdp) {
+        const currentGdp = state.economy.gdp;
+        if (Number.isFinite(previousGdpNorm)) {
+            const previousGdp = denormalizeWithRange(previousGdpNorm, nodeConfigs.gdp.min, nodeConfigs.gdp.max);
+            const monthlyGrowth = previousGdp > 0 ? ((currentGdp - previousGdp) / previousGdp) : 0;
+            state.economy.gdpGrowth = clamp(monthlyGrowth * 12, -0.1, 0.1);
+        }
+    }
+}
+
+function stepRelationshipSimulation(state) {
+    ensureSimulationState(state);
+    if (!state?.simulation?.nodes) return null;
+
+    const previousGdpNorm = state.simulation.nodes.gdp?.current;
+    const snapshot = {};
+    Object.keys(state.simulation.nodes).forEach((nodeId) => {
+        snapshot[nodeId] = { ...state.simulation.nodes[nodeId] };
+    });
+
+    const nextNodes = computeNextSimulationNodes(state, snapshot);
+    state.simulation.nodes = nextNodes;
+    syncStateFromSimulation(state, previousGdpNorm);
+    return nextNodes;
+}
+
+function projectOneStepRawMetrics(state) {
+    ensureSimulationState(state);
+    const snapshot = {};
+    Object.keys(state.simulation.nodes).forEach((nodeId) => {
+        snapshot[nodeId] = { ...state.simulation.nodes[nodeId] };
+    });
+    const projected = computeNextSimulationNodes(state, snapshot);
+    const raw = {};
+
+    Object.entries(nodeConfigs).forEach(([nodeId, cfg]) => {
+        raw[nodeId] = denormalizeWithRange(projected[nodeId].current, cfg.min, cfg.max);
+    });
+
+    const previousGdp = denormalizeWithRange(snapshot.gdp.current, nodeConfigs.gdp.min, nodeConfigs.gdp.max);
+    const projectedGdp = raw.gdp;
+    const monthlyGrowth = previousGdp > 0 ? ((projectedGdp - previousGdp) / previousGdp) : 0;
+    raw.gdpGrowth = clamp(monthlyGrowth * 12, -0.1, 0.1);
+    return raw;
+}
+
+function getCurrentGraphLinks() {
+    return getGraphLinksFromRules();
+}
+
+function getPolicyPercent(state, policyId) {
+    const rawValue = getStateValueByNodeId(state, policyId);
+    return clamp(typeof rawValue === 'number' ? rawValue : 0, 0, 100);
+}
+
+// Calculate annualized budget arithmetic and realize only monthly debt accumulation.
 function calculateBudget(state) {
-    const policies = state.policies;
-    const economy = state.economy;
-    const housing = policies.housingPolicy || {};
-    const labor = policies.laborPolicy || {};
-    const taxPolicy = policies.taxPolicy || {};
+    const model = state?.budgetModel || {};
+    const revenues = model.revenues || {};
+    const costs = model.costs || {};
+    const referenceGdp = Number(model.referenceGdp) > 0 ? Number(model.referenceGdp) : Math.max(1, state.economy.gdp || 1);
+    const currentGdp = Math.max(1, state.economy.gdp || referenceGdp);
+    const gdpFactor = currentGdp / referenceGdp;
 
-    const incomeTaxEffective = policies.incomeTax + ((taxPolicy.irsBrackets || 35) - 35) * 0.15 - ((taxPolicy.nhrRegime || 40) - 40) * 0.1;
-    const corporateTaxEffective = policies.corporateTax + ((taxPolicy.wealthTax || 25) - 25) * 0.03;
-    const vatEffective = policies.vat + ((housing.alTaxes || 40) - 40) * 0.02;
-    
-    // Calculate income
-    const incomeTaxRevenue = economy.gdp * (Math.max(0, incomeTaxEffective) / 100) * 0.15;
-    const corporateTaxRevenue = economy.gdp * (Math.max(0, corporateTaxEffective) / 100) * 0.08;
-    const vatRevenue = economy.gdp * (Math.max(0, vatEffective) / 100) * 0.12;
-    const wealthTaxRevenue = economy.gdp * ((taxPolicy.wealthTax || 25) / 100) * 0.015;
-    const alTaxRevenue = economy.gdp * ((housing.alTaxes || 40) / 100) * 0.01;
-    const goldenVisaRevenue = economy.gdp * ((housing.goldenVisa || 25) / 100) * 0.006;
-    const totalIncome = incomeTaxRevenue + corporateTaxRevenue + vatRevenue + wealthTaxRevenue + alTaxRevenue + goldenVisaRevenue;
-    
-    // Calculate expenditure
-    const baseExpenditure = economy.gdp * 0.4; // 40% of GDP baseline
-    const healthcareCost = baseExpenditure * (policies.healthcareSpending / 100) * 0.25;
-    const educationCost = baseExpenditure * (policies.educationSpending / 100) * 0.20;
-    const welfareCost = baseExpenditure * (policies.welfareSpending / 100) * 0.15;
-    const transportCost = baseExpenditure * (policies.transportSpending / 100) * 0.10;
-    const policeCost = baseExpenditure * (policies.policeSpending / 100) * 0.08;
-    const justiceCost = baseExpenditure * (policies.justiceSpending / 100) * 0.05;
-    const digitalCost = baseExpenditure * (policies.digitalInfrastructure / 100) * 0.04;
-    const greenCost = baseExpenditure * (policies.greenEnergy / 100) * 0.03;
-    const housingProgramCost = baseExpenditure * ((housing.maisHabitacao || 35) / 100) * 0.07;
-    const rentControlCost = baseExpenditure * ((housing.rentControl || 30) / 100) * 0.03;
-    const youthJobsCost = baseExpenditure * ((labor.youthJobs || 38) / 100) * 0.04;
-    const minimumWageSupportCost = baseExpenditure * ((labor.minimumWage || 45) / 100) * 0.03;
-    const fourDayTransitionCost = baseExpenditure * ((labor.fourDayWeek || 20) / 100) * 0.02;
-    
-    const totalExpenditure = healthcareCost + educationCost + welfareCost + 
-                            transportCost + policeCost + justiceCost + 
-                            digitalCost + greenCost + housingProgramCost +
-                            rentControlCost + youthJobsCost + minimumWageSupportCost +
-                            fourDayTransitionCost;
-    
-    // Calculate deficit and debt
-    const deficit = totalExpenditure - totalIncome;
-    const debt = economy.debt + deficit;
-    
+    let annualIncome = 0;
+    Object.entries(revenues).forEach(([policyId, entry]) => {
+        const pct = getPolicyPercent(state, policyId) / 100;
+        const baseRevenue = Number(entry?.baseRevenue) || 0;
+        const scale = entry?.gdpScaled === false ? 1 : gdpFactor;
+        annualIncome += pct * baseRevenue * scale;
+    });
+
+    let annualExpenditure = 0;
+    Object.entries(costs).forEach(([policyId, entry]) => {
+        const pct = getPolicyPercent(state, policyId) / 100;
+        const baseCost = Number(entry?.baseCost) || 0;
+        const scale = entry?.gdpScaled === false ? 1 : gdpFactor;
+        annualExpenditure += pct * baseCost * scale;
+    });
+
+    const annualDeficit = annualExpenditure - annualIncome;
+    const monthlyDeficit = annualDeficit / 12;
+    const nextDebt = Math.max(0, state.economy.debt + monthlyDeficit);
+
     return {
-        income: Math.round(totalIncome),
-        expenditure: Math.round(totalExpenditure),
-        deficit: Math.round(deficit),
-        debt: Math.round(debt)
+        income: Math.round(annualIncome),
+        expenditure: Math.round(annualExpenditure),
+        deficit: Math.round(annualDeficit),
+        debt: Math.round(nextDebt)
     };
 }
 
-// Calculate population metrics based on policies
 function calculatePopulationMetrics(state) {
-    const policies = state.policies;
-    const population = state.population;
-    const budget = calculateBudget(state);
-    const events = state.currentEvents;
-    const housing = policies.housingPolicy || {};
-    const labor = policies.laborPolicy || {};
-    const taxPolicy = policies.taxPolicy || {};
-    
-    // Calculate happiness
-    let happiness = population.happiness;
-    happiness += (policies.welfareSpending - 50) * 0.2;
-    happiness += (policies.healthcareSpending - 50) * 0.1;
-    happiness -= (policies.incomeTax - 25) * 0.3;
-    happiness += ((labor.minimumWage || 45) - 45) * 0.15;
-    happiness += ((labor.fourDayWeek || 20) - 20) * 0.12;
-    happiness += ((housing.rentControl || 30) - 30) * 0.12;
-    happiness += ((housing.alTaxes || 40) - 40) * 0.06;
-    happiness -= ((housing.goldenVisa || 25) - 25) * 0.08;
-    happiness += ((taxPolicy.irsBrackets || 35) - 35) * 0.05;
-    happiness -= ((taxPolicy.nhrRegime || 40) - 40) * 0.04;
-    happiness -= Math.abs(budget.deficit) / 1000; // Deficit impact
-    
-    // Housing crisis impact on happiness
-    happiness -= events.housingCrisis.rentPrices * 15; // High rent reduces happiness
-    happiness -= events.housingCrisis.youthIndependence * 10; // Low youth independence
-    happiness += (housing.rentControl || 30) * 0.1; // Rent control helps
-    
-    happiness = Math.max(0, Math.min(100, happiness));
-    
-    // Calculate health
-    let health = population.health;
-    health += (policies.healthcareSpending - 50) * 0.3;
-    health += (policies.greenEnergy - 50) * 0.1;
-    health += ((labor.fourDayWeek || 20) - 20) * 0.05; // Work-life balance effect
-    health -= Math.abs(state.economy.inflation - 2) * 2; // Inflation impact
-    
-    // SNS strain impact
-    health -= events.snsStrain.waitTimes * 20; // Long wait times hurt health
-    health -= events.snsStrain.doctorStrikes * 15; // Strikes reduce access
-    health += (policies.healthcareSpending - 55) * 0.4; // Extra spending helps SNS
-    
-    health = Math.max(0, Math.min(100, health));
-    
-    // Calculate education
-    let education = population.education;
-    education += (policies.educationSpending - 50) * 0.4;
-    education += (policies.digitalInfrastructure - 50) * 0.2;
-    education += ((labor.youthJobs || 38) - 38) * 0.08;
-    
-    // Education strike impact
-    education -= events.educationStrikes.teacherStrikes * 25; // Major impact from strikes
-    education -= events.educationStrikes.qualityImpact * 15; // Quality degradation
-    education += (policies.educationSpending - 50) * 0.5; // Extra funding helps
-    
-    education = Math.max(0, Math.min(100, education));
-    
-    // Calculate safety
-    let safety = population.safety;
-    safety += (policies.policeSpending - 50) * 0.3;
-    safety += (policies.justiceSpending - 50) * 0.2;
-    safety += ((taxPolicy.wealthTax || 25) - 25) * 0.05; // Lower inequality pressure
-    safety -= (state.economy.unemployment - 5) * 1.5; // Unemployment impact
-    
-    safety = Math.max(0, Math.min(100, safety));
-    
-    // Calculate Portugal-specific metrics
-    let youthIndependence = population.youthIndependence;
-    youthIndependence -= events.housingCrisis.rentPrices * 30; // High rent prevents independence
-    youthIndependence += (housing.maisHabitacao || 35) * 0.3; // Housing programs help
-    youthIndependence += (labor.youthJobs || 38) * 0.2; // Youth jobs help
-    youthIndependence += (labor.minimumWage || 45) * 0.1; // Affordability through wages
-    youthIndependence = Math.max(0, Math.min(100, youthIndependence));
-    
-    let rentBurden = population.rentBurden;
-    rentBurden += events.housingCrisis.rentPrices * 25; // High rent increases burden
-    rentBurden += (housing.goldenVisa || 25) * 0.2; // Visa demand can push rents up
-    rentBurden -= (housing.rentControl || 30) * 0.4; // Rent control reduces burden
-    rentBurden -= (housing.alTaxes || 40) * 0.2; // AL taxes help
-    rentBurden -= (housing.maisHabitacao || 35) * 0.25; // More supply lowers burden
-    rentBurden = Math.max(0, Math.min(100, rentBurden));
-    
+    const projected = projectOneStepRawMetrics(state);
     return {
-        happiness: Math.round(happiness),
-        health: Math.round(health),
-        education: Math.round(education),
-        safety: Math.round(safety),
-        youthIndependence: Math.round(youthIndependence),
-        rentBurden: Math.round(rentBurden)
+        happiness: Math.round(projected.happiness),
+        health: Math.round(projected.health),
+        education: Math.round(projected.education),
+        safety: Math.round(projected.safety),
+        youthIndependence: Math.round(projected.youthIndependence),
+        rentBurden: Math.round(projected.rentBurden)
     };
 }
 
-// Calculate economic indicators
 function calculateEconomicIndicators(state) {
-    const policies = state.policies;
-    const economy = state.economy;
-    const budget = calculateBudget(state);
-    const housing = policies.housingPolicy || {};
-    const labor = policies.laborPolicy || {};
-    const taxPolicy = policies.taxPolicy || {};
-    
-    // Calculate GDP growth
-    let gdpGrowth = economy.gdpGrowth;
-    gdpGrowth -= (policies.incomeTax - 25) * 0.0018;
-    gdpGrowth -= (policies.corporateTax - 21) * 0.0012;
-    gdpGrowth -= (policies.vat - 23) * 0.0007;
-    gdpGrowth += (policies.transportSpending - 50) * 0.0006;
-    gdpGrowth += (policies.digitalInfrastructure - 50) * 0.0005;
-    gdpGrowth += (policies.greenEnergy - 38) * 0.00025;
-    gdpGrowth -= (policies.carbonTax - 20) * 0.00045;
-    gdpGrowth += ((housing.maisHabitacao || 35) - 35) * 0.00035;
-    gdpGrowth += ((housing.goldenVisa || 25) - 25) * 0.00025;
-    gdpGrowth -= ((housing.alTaxes || 40) - 40) * 0.0002;
-    gdpGrowth -= ((taxPolicy.irsBrackets || 35) - 35) * 0.0004;
-    gdpGrowth += ((taxPolicy.nhrRegime || 40) - 40) * 0.0005;
-    gdpGrowth -= ((taxPolicy.wealthTax || 25) - 25) * 0.0003;
-    gdpGrowth += ((labor.youthJobs || 38) - 38) * 0.0002;
-    gdpGrowth += (50 - Math.abs((labor.fourDayWeek || 20) - 35)) * 0.00008;
-    
-    // Calculate unemployment
-    let unemployment = economy.unemployment;
-    unemployment += (policies.incomeTax - 25) * 0.04;
-    unemployment += (policies.corporateTax - 21) * 0.05;
-    unemployment += ((labor.minimumWage || 45) - 45) * 0.03;
-    unemployment -= ((labor.youthJobs || 38) - 38) * 0.06;
-    unemployment -= ((labor.fourDayWeek || 20) - 20) * 0.015;
-    unemployment -= (policies.transportSpending - 50) * 0.02;
-    unemployment -= (policies.digitalInfrastructure - 50) * 0.015;
-    unemployment -= (gdpGrowth - 0.02) * 2.4; // Growth impact
-    
-    // Calculate inflation
-    let inflation = economy.inflation;
-    inflation += (budget.deficit / economy.gdp) * 10;
-    inflation += (policies.vat - 23) * 0.045;
-    inflation += (policies.carbonTax - 20) * 0.022;
-    inflation += ((labor.minimumWage || 45) - 45) * 0.02;
-    inflation += ((housing.goldenVisa || 25) - 25) * 0.018;
-    inflation -= (policies.greenEnergy - 38) * 0.01;
-    inflation -= ((housing.maisHabitacao || 35) - 35) * 0.015;
-    inflation -= ((housing.rentControl || 30) - 30) * 0.012;
-    
+    const projected = projectOneStepRawMetrics(state);
     return {
-        gdpGrowth: Math.max(-0.1, Math.min(0.1, gdpGrowth)),
-        unemployment: Math.max(0, Math.min(25, unemployment)),
-        inflation: Math.max(0, Math.min(10, inflation))
+        gdp: Math.round(projected.gdp),
+        debt: Math.round(state.economy.debt),
+        gdpGrowth: projected.gdpGrowth,
+        unemployment: Math.round(projected.unemployment * 10) / 10,
+        inflation: Math.round(projected.inflation * 10) / 10
     };
 }
 
-// Calculate political metrics
 function calculatePoliticalMetrics(state) {
-    const population = calculatePopulationMetrics(state);
-    const economy = calculateEconomicIndicators(state);
-    const policies = state.policies;
-    const taxPolicy = policies.taxPolicy || {};
-    
-    // Calculate approval
+    const happiness = state.population.happiness;
+    const safety = state.population.safety;
+    const health = state.population.health;
+    const education = state.population.education;
+    const rentBurden = state.population.rentBurden;
+    const unemployment = state.economy.unemployment;
+    const inflation = state.economy.inflation;
+    const deficitImpact = Math.abs(state.budget.deficit) / 2000;
+
     let approval = state.politics.approval;
-    approval += (population.happiness - 65) * 0.3;
-    approval += (population.youthIndependence - 40) * 0.1;
-    approval -= (population.rentBurden - 45) * 0.12;
-    approval -= (economy.unemployment - 6.8) * 2;
-    approval -= Math.abs(economy.inflation - 2) * 3;
-    approval -= Math.abs(state.budget.deficit) / 2000;
-    approval += ((taxPolicy.wealthTax || 25) - 25) * 0.05;
-    approval = Math.max(0, Math.min(100, approval));
-    
-    // Calculate stability
+    approval += (happiness - 60) * 0.08;
+    approval += (state.population.youthIndependence - 40) * 0.04;
+    approval -= (rentBurden - 45) * 0.06;
+    approval -= (unemployment - 6.5) * 1.1;
+    approval -= Math.abs(inflation - 2) * 1.2;
+    approval -= deficitImpact;
+    approval = clamp(approval, 0, 100);
+
     let stability = state.politics.stability;
-    stability += (population.safety - 78) * 0.2;
-    stability += (population.health - 72) * 0.1;
-    stability += (population.education - 62) * 0.08;
-    stability -= (population.rentBurden - 45) * 0.1;
-    stability -= Math.abs(economy.unemployment - 6.8) * 1.5;
-    stability = Math.max(0, Math.min(100, stability));
-    
+    stability += (safety - 75) * 0.08;
+    stability += (health - 65) * 0.05;
+    stability += (education - 62) * 0.04;
+    stability -= (rentBurden - 45) * 0.05;
+    stability -= Math.abs(unemployment - 6.5) * 0.6;
+    stability = clamp(stability, 0, 100);
+
     return {
         approval: Math.round(approval),
         stability: Math.round(stability)

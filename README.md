@@ -16,11 +16,12 @@ This project is built entirely with web technologies to maximize UI potential an
 To ensure the game remains fun and easy to balance, the codebase strictly separates the mathematical simulation (The Engine) from the visual dashboard (The UI).
 
 ### 1. The System Dynamics Engine (`/engine`)
-The core of the game is a node-based graph. 
+The core of the game is a node-based graph with CSV-driven relationship simulation.
 * **Nodes:** Represent metrics (e.g., `GDP`, `Healthcare_Quality`, `Socialist_Voter_Happiness`).
 * **Policies:** Player-controlled levers (e.g., `Income_Tax_Rate`, `Public_Transport_Subsidies`).
-* **Edges/Multipliers:** The mathematical relationships defining how changes in one node affect others.
-* **The Tick Loop:** A function that processes all equations and advances the game by one quarter (3 months) per turn.
+* **Relationships:** CSV-defined mathematical relationships with weights and inertia values
+* **The Tick Loop:** A function that processes all equations and advances the game by one month per turn.
+* **Relationship Simulation:** Base-anchored target + inertia drift system for realistic metric evolution
 
 ### 2. The User Interface (`/ui`)
 A clean, modern, dashboard-style interface. 
@@ -37,8 +38,9 @@ A clean, modern, dashboard-style interface.
 │
 ├── /engine             # NO UI CODE HERE. PURE MATHEMATICS
 │   ├── state.js        # Portugal's initial conditions and policy management
-│   ├── rules.js        # Economic formulas, policy multipliers, and relationships
-│   └── gameLoop.js     # Turn processing and game state transitions
+│   ├── rules.js        # Economic formulas, policy multipliers, and relationship simulation
+│   ├── gameLoop.js     # Turn processing and game state transitions
+│   └── relationships.csv # CSV file defining node relationships with weights and inertia
 │
 └── /ui                 # NO MATH HERE. PURE VISUALS
     ├── render.js       # DOM updates and visual rendering logic
@@ -55,7 +57,7 @@ The MVP is now fully functional with advanced physics simulation! You can:
 5. **Tune physics parameters** with the settings panel
 6. Advance turns and see the consequences
 7. Monitor economic, social, and political indicators
-8. **Experience continuous gameplay** without automatic game over interruptions
+8. Experience game over or victory conditions
 
 ## 🎮 How to Run
 1. Start the local development server: `python -m http.server 8000`
@@ -130,38 +132,56 @@ The game features **22 adjustable policies** across 8 categories:
 
 ### Game Conditions
 
-#### **Current Implementation**
-- **Continuous Gameplay**: Game continues without automatic interruptions
-- **Manual Monitoring**: Players track their own progress toward goals
-- **Performance Indicators**: Real-time feedback on all metrics
-- **Strategic Freedom**: Play as long as you want to achieve your objectives
+#### Victory Conditions
+- Approval > 80%
+- GDP growth > 3%
+- Happiness > 75%
+- Minimum 20 turns played
 
-#### **Target Goals** (Optional Objectives)
-- **Economic Success**: Maintain GDP growth > 3% and debt < 100% of GDP
-- **Popular Support**: Achieve approval > 80% and happiness > 75%
-- **Social Stability**: Keep stability > 80% and unemployment < 6%
-- **Long-term Planning**: Sustainable policies over 20+ turns
+#### **Game Over Conditions**
+- Economic collapse: Debt > 200% of GDP
+- Political instability: Stability < 20%
+- Population revolt: Happiness < 20%
+- Hyperinflation: Inflation > 15%
+- Mass unemployment: Unemployment > 20%
 
 ### 🔄 **Turn System**
 - **Turn Duration**: 1 month (monthly progression)
 - **Action Points**: 3 per turn (reset each turn)
 - **Progression**: January 2024 → February 2024 → March 2024... (12 turns = 1 year)
+- **Relationship Processing**: Each turn processes CSV-defined relationships with inertia-based evolution
 
-### � **Recent Updates & Improvements**
+### 🗂️ **CSV-Based Relationship System**
+The game now uses a data-driven approach for defining policy and metric relationships:
 
-#### **Force Graph Physics Enhancements**
-- **Topology Change Detection**: Intelligent detection of graph structure changes to optimize simulation
-- **Smooth Transitions**: Reduced energy injection for in-place updates to prevent jarring node movements
-- **Improved Stability**: Better handling of node positioning during turn progression
-- **Performance Optimization**: Only restarts simulation with full energy when topology actually changes
+#### **Relationship Data Structure** (`relationships.csv`)
+- **Source**: Policy or metric node that influences others
+- **Target**: Metric node that receives the influence
+- **Weight**: Strength of relationship (-1.0 to +1.0, negative = inverse relationship)
+- **Inertia**: Resistance to change (1-10, higher = slower evolution)
 
-#### **Game Loop Refinements**
-- **Removed Automatic Game Over**: Eliminated disruptive game-over conditions for continuous gameplay
-- **Streamlined Turn Processing**: Cleaner separation of concerns in turn advancement logic
-- **Enhanced Player Agency**: Players now determine their own success criteria and play duration
-- **Improved Game Flow**: Focus on strategic decision-making without forced interruptions
+#### **Key Features**
+- **32 Defined Relationships**: Covering all major policy-to-metric interactions
+- **Inertia-Based Evolution**: Metrics change gradually based on historical inertia
+- **Base-Anchored Targets**: Policies create target values that metrics drift toward
+- **Async Loading**: CSV data loads asynchronously with start button state management
+- **Error Handling**: Graceful fallback if relationship data fails to load
 
-### � **User Interface**
+#### **Example Relationships**
+```
+incomeTax,gdp,-0.80,4        # Higher tax reduces GDP with medium inertia
+healthcareSpending,health,0.70,3  # More spending improves health
+unemployment,happiness,-0.50,3     # High unemployment hurts happiness
+carbonTax,inflation,0.25,2         # Carbon tax causes inflation
+```
+
+#### **Simulation Process**
+1. **Policy Changes** create target values for affected metrics
+2. **Inertia System** gradually moves current values toward targets
+3. **Monthly Processing** applies all relationships simultaneously
+4. **Feedback Loops** allow metrics to influence other metrics over time
+
+### 🎨 **User Interface**
 - **Start Screen**: Clean introduction with game title and start button
 - **Top Navigation Bar**: Real-time budget display, turn counter, action points
 - **Force-Directed Canvas**: Dynamic D3.js physics-based node layout
@@ -171,18 +191,18 @@ The game features **22 adjustable policies** across 8 categories:
 
 ### 🌐 **Force-Directed Graph System**
 - **D3.js Integration**: Industry-standard physics simulation library
-- **Dynamic Node Positioning**: Nodes self-organize based on relationships
-- **Visual Relationship Links**: Color-coded arrows showing positive/negative impacts
+- **Dynamic Node Positioning**: Nodes self-organize based on CSV-defined relationships
+- **Visual Relationship Links**: Color-coded arrows showing positive/negative impacts from CSV data
 - **Interactive Dragging**: Click and drag nodes to reposition them
 - **Physics Simulation**: Repulsion, gravity, collision, and link forces
 - **Real-time Adjustments**: Settings panel to tune physics parameters
-- **Link Strength Visualization**: Thicker lines = stronger policy impacts
+- **Link Strength Visualization**: Thicker lines = stronger policy impacts (based on CSV weights)
+- **Relationship Data Loading**: Async CSV loading with start button state management
 
 ### ⚙️ **Physics Controls Panel**
 - **Repulsion Force**: Controls how strongly nodes push apart (-80 to -420)
 - **Gravity Strength**: Pulls nodes toward center (0.005 to 0.12)
 - **Link Pull**: Controls attraction between connected nodes (0.05 to 0.5)
-- **Link Distance**: Preferred distance between connected nodes (120px to 320px)
 - **Reset Defaults**: Restore original physics parameters
 
 ### 📊 **Real-time Preview System**
@@ -196,8 +216,9 @@ When adjusting policies in the modal:
 
 #### **Engine (`/engine`) - Pure Mathematics**
 - **state.js**: Portugal's initial conditions and policy management
-- **rules.js**: Economic formulas and policy multipliers
-- **gameLoop.js**: Turn processing and game state transitions
+- **rules.js**: Economic formulas, policy multipliers, and CSV-driven relationship simulation
+- **gameLoop.js**: Turn processing with relationship-based metric evolution
+- **relationships.csv**: Data-driven relationship definitions with weights and inertia
 
 #### **UI (`/ui`) - Pure Visuals**
 - **render.js**: DOM updates and visual rendering logic
@@ -214,9 +235,9 @@ When adjusting policies in the modal:
 2. **Assess Situation**: Review economic indicators and population metrics
 3. **Adjust Policies**: Click policy nodes, adjust sliders, preview changes
 4. **Apply Changes**: Confirm policy adjustments (consumes action points)
-5. **Advance Turn**: Click "Next Turn" to process monthly results
+5. **Advance Turn**: Click "Next Turn" to process quarterly results
 6. **Monitor Progress**: Watch indicators change based on policy decisions
-7. **Set Your Own Goals**: Work toward your definition of success without forced interruptions
+7. **Achieve Goals**: Work toward victory conditions or avoid game over
 
 ### 🔧 **Advanced Features**
 - **Score Calculation**: Comprehensive performance scoring system

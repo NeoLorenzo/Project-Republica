@@ -37,7 +37,6 @@ function getOutcomeGraphNodes(state) {
         { id: 'gdp', name: 'GDP', icon: '📈', value: `€${(state.economy.gdp / 1000).toFixed(1)}B`, color: 'var(--economy)', nodeType: 'outcome' },
         { id: 'health', name: 'Health', icon: '❤️', value: `${state.population.health}%`, color: 'var(--health)', nodeType: 'outcome' },
         { id: 'happiness', name: 'Happiness', icon: '😊', value: `${state.population.happiness}%`, color: 'var(--welfare)', nodeType: 'outcome' },
-        { id: 'debt', name: 'Debt', icon: '💳', value: `€${(state.economy.debt / 1000).toFixed(1)}B`, color: 'var(--negative)', nodeType: 'outcome' },
         { id: 'education', name: 'Education', icon: '🎓', value: `${state.population.education}%`, color: 'var(--education)', nodeType: 'outcome' },
         { id: 'safety', name: 'Safety', icon: '🛡️', value: `${state.population.safety}%`, color: 'var(--law-order)', nodeType: 'outcome' },
         { id: 'unemployment', name: 'Unemployment', icon: '👥', value: `${state.economy.unemployment.toFixed(1)}%`, color: 'var(--warning)', nodeType: 'outcome' },
@@ -299,6 +298,14 @@ function onTick() {
 function renderForceGraph(state) {
     const container = document.getElementById('radial-canvas');
     if (!container || typeof d3 === 'undefined') return;
+    if (typeof isRelationshipDataReady === 'function' && !isRelationshipDataReady()) return;
+
+    const rawNodes = buildGraphNodes(state);
+    const nodeIds = new Set(rawNodes.map((node) => node.id));
+    const preLinks = (typeof getCurrentGraphLinks === 'function' ? getCurrentGraphLinks(state) : getGraphLinksFromRules()).filter((link) =>
+        nodeIds.has(link.source) && nodeIds.has(link.target)
+    );
+    if (!preLinks.length) return;
 
     initializeForceGraph(container);
     forceGraphContext.currentState = state;
@@ -310,13 +317,11 @@ function renderForceGraph(state) {
     forceGraphContext.svg.attr('width', width).attr('height', height);
 
     const previousNodes = new Map((forceGraphContext.simulation.nodes() || []).map((node) => [node.id, node]));
-    const rawNodes = buildGraphNodes(state);
     const nodes = rawNodes.map((node) => {
         const previous = previousNodes.get(node.id);
         return previous ? { ...previous, ...node } : { ...node, x: width / 2, y: height / 2 };
     });
 
-    const nodeIds = new Set(nodes.map((node) => node.id));
     const links = (typeof getCurrentGraphLinks === 'function' ? getCurrentGraphLinks(state) : getGraphLinksFromRules()).filter((link) =>
         nodeIds.has(link.source) && nodeIds.has(link.target)
     );

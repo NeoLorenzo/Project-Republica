@@ -110,6 +110,46 @@ const portugalState = {
             nhrRegime: 40, // Non-habitual resident regime
             wealthTax: 25, // Wealth tax considerations
         }
+    },
+
+    // Accounting model coefficients (annual, million EUR).
+    budgetModel: {
+        referenceGdp: 267000,
+        revenues: {
+            incomeTax: { baseRevenue: 180000, gdpScaled: true },
+            corporateTax: { baseRevenue: 90000, gdpScaled: true },
+            vat: { baseRevenue: 110000, gdpScaled: true },
+            carbonTax: { baseRevenue: 12000, gdpScaled: true },
+            'housingPolicy.alTaxes': { baseRevenue: 9000, gdpScaled: true },
+            'housingPolicy.goldenVisa': { baseRevenue: 5000, gdpScaled: true },
+            'taxPolicy.irsBrackets': { baseRevenue: 8000, gdpScaled: true },
+            'taxPolicy.nhrRegime': { baseRevenue: 3000, gdpScaled: true },
+            'taxPolicy.wealthTax': { baseRevenue: 1000, gdpScaled: true }
+        },
+        costs: {
+            healthcareSpending: { baseCost: 50000, gdpScaled: true },
+            educationSpending: { baseCost: 35000, gdpScaled: true },
+            welfareSpending: { baseCost: 24000, gdpScaled: true },
+            transportSpending: { baseCost: 15000, gdpScaled: true },
+            digitalInfrastructure: { baseCost: 12000, gdpScaled: true },
+            policeSpending: { baseCost: 14000, gdpScaled: true },
+            justiceSpending: { baseCost: 9000, gdpScaled: true },
+            greenEnergy: { baseCost: 8000, gdpScaled: true },
+            incomeTax: { baseCost: 0, gdpScaled: true },
+            corporateTax: { baseCost: 0, gdpScaled: true },
+            vat: { baseCost: 0, gdpScaled: true },
+            carbonTax: { baseCost: 0, gdpScaled: true },
+            'housingPolicy.maisHabitacao': { baseCost: 15000, gdpScaled: true },
+            'housingPolicy.goldenVisa': { baseCost: 3000, gdpScaled: true },
+            'housingPolicy.alTaxes': { baseCost: 1000, gdpScaled: true },
+            'housingPolicy.rentControl': { baseCost: 7000, gdpScaled: true },
+            'laborPolicy.minimumWage': { baseCost: 12000, gdpScaled: true },
+            'laborPolicy.fourDayWeek': { baseCost: 10000, gdpScaled: true },
+            'laborPolicy.youthJobs': { baseCost: 11000, gdpScaled: true },
+            'taxPolicy.irsBrackets': { baseCost: 2000, gdpScaled: true },
+            'taxPolicy.nhrRegime': { baseCost: 1500, gdpScaled: true },
+            'taxPolicy.wealthTax': { baseCost: 800, gdpScaled: true }
+        }
     }
 };
 
@@ -117,6 +157,9 @@ const portugalState = {
 function initializeGameState() {
     // Deep copy the initial state to avoid mutation
     window.gameState = JSON.parse(JSON.stringify(portugalState));
+    if (typeof initializeSimulationNodes === 'function') {
+        initializeSimulationNodes(window.gameState);
+    }
     console.log('Game state initialized for Portugal');
     return window.gameState;
 }

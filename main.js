@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeGame();
 });
 
-function initializeGame() {
+async function initializeGame() {
     // Set up event listeners
     setupEventListeners();
     
@@ -14,8 +14,50 @@ function initializeGame() {
     if (typeof initializeGameState === 'function') {
         initializeGameState();
     }
+
+    await initializeRelationshipsAndStartGate();
     
     console.log('Game initialized successfully');
+}
+
+function setStartButtonState(mode) {
+    const startBtn = document.getElementById('start-game-btn');
+    if (!startBtn) return;
+
+    if (mode === 'loading') {
+        startBtn.disabled = true;
+        startBtn.textContent = 'Loading relationships...';
+        return;
+    }
+
+    if (mode === 'ready') {
+        startBtn.disabled = false;
+        startBtn.textContent = 'Start Game';
+        startBtn.dataset.mode = 'start';
+        return;
+    }
+
+    if (mode === 'error') {
+        startBtn.disabled = false;
+        startBtn.textContent = 'Load failed - Retry';
+        startBtn.dataset.mode = 'retry';
+    }
+}
+
+async function initializeRelationshipsAndStartGate() {
+    if (typeof loadRelationshipsCsv !== 'function') {
+        setStartButtonState('error');
+        return;
+    }
+
+    setStartButtonState('loading');
+    try {
+        await loadRelationshipsCsv();
+        setStartButtonState('ready');
+    } catch (error) {
+        console.error('Failed to load relationships CSV:', error);
+        setStartButtonState('error');
+    }
 }
 
 function setupEventListeners() {
@@ -56,6 +98,13 @@ function setupEventListeners() {
 }
 
 function startGame() {
+    if (typeof isRelationshipDataReady === 'function' && !isRelationshipDataReady()) {
+        if (typeof relationshipLoadState !== 'undefined' && relationshipLoadState.error) {
+            initializeRelationshipsAndStartGate();
+        }
+        return;
+    }
+
     const startScreen = document.getElementById('start-screen');
     const mainGame = document.getElementById('main-game');
     
@@ -76,6 +125,10 @@ function startGame() {
 
 function nextTurn() {
     console.log('Advancing to next turn...');
+    if (typeof isRelationshipDataReady === 'function' && !isRelationshipDataReady()) {
+        console.error('Relationship data not loaded; turn is blocked.');
+        return;
+    }
     
     // Process the next turn in the engine
     if (typeof processNextTurn === 'function') {

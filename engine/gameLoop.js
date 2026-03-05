@@ -9,28 +9,25 @@ function processNextTurn() {
         console.error('Game state not initialized');
         return;
     }
+    if (typeof isRelationshipDataReady === 'function' && !isRelationshipDataReady()) {
+        console.error('Relationship data not loaded; cannot process turn.');
+        return state;
+    }
     
     console.log(`Processing turn ${state.game.turn} - ${getMonthName(state.game.month)} ${state.game.year}`);
     
-    // Calculate new values based on current policies
+    // Run bounded relationship simulation first (base-anchored target + inertia drift).
+    if (typeof stepRelationshipSimulation === 'function') {
+        stepRelationshipSimulation(state);
+    }
+
+    // Recalculate budget and political metrics from updated state.
     const newBudget = calculateBudget(state);
-    const newPopulationMetrics = calculatePopulationMetrics(state);
-    const newEconomicIndicators = calculateEconomicIndicators(state);
     const newPoliticalMetrics = calculatePoliticalMetrics(state);
-    
-    // Update the game state
     state.budget = newBudget;
-    state.population = { ...state.population, ...newPopulationMetrics };
-    state.economy = { ...state.economy, ...newEconomicIndicators };
-    state.politics = { ...state.politics, ...newPoliticalMetrics };
-    
-    // Update GDP based on growth (monthly growth rate)
-    const monthlyGrowthRate = state.economy.gdpGrowth / 12; // Convert annual to monthly
-    state.economy.gdp = Math.round(state.economy.gdp * (1 + monthlyGrowthRate));
-    
-    // Update debt
-    state.economy.debt = newBudget.debt;
     state.economy.deficit = newBudget.deficit;
+    state.economy.debt = newBudget.debt;
+    state.politics = { ...state.politics, ...newPoliticalMetrics };
     
     // Advance turn
     advanceTurn(state);

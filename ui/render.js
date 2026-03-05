@@ -57,6 +57,9 @@ function updateTurnCounter(state) {
 function renderPolicyNodes(state) {
     const canvas = document.getElementById('radial-canvas');
     if (!canvas) return;
+    if (typeof isRelationshipDataReady === 'function' && !isRelationshipDataReady()) {
+        return;
+    }
 
     hideTooltip();
     if (typeof renderForceGraph === 'function') {
