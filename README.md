@@ -55,7 +55,7 @@ The MVP is now fully functional with advanced physics simulation! You can:
 5. **Tune physics parameters** with the settings panel
 6. Advance turns and see the consequences
 7. Monitor economic, social, and political indicators
-8. Experience game over or victory conditions
+8. **Experience continuous gameplay** without automatic game over interruptions
 
 ## 🎮 How to Run
 1. Start the local development server: `python -m http.server 8000`
@@ -130,25 +130,38 @@ The game features **22 adjustable policies** across 8 categories:
 
 ### Game Conditions
 
-#### Victory Conditions
-- Approval > 80%
-- GDP growth > 3%
-- Happiness > 75%
-- Minimum 20 turns played
+#### **Current Implementation**
+- **Continuous Gameplay**: Game continues without automatic interruptions
+- **Manual Monitoring**: Players track their own progress toward goals
+- **Performance Indicators**: Real-time feedback on all metrics
+- **Strategic Freedom**: Play as long as you want to achieve your objectives
 
-#### **Game Over Conditions**
-- Economic collapse: Debt > 200% of GDP
-- Political instability: Stability < 20%
-- Population revolt: Happiness < 20%
-- Hyperinflation: Inflation > 15%
-- Mass unemployment: Unemployment > 20%
+#### **Target Goals** (Optional Objectives)
+- **Economic Success**: Maintain GDP growth > 3% and debt < 100% of GDP
+- **Popular Support**: Achieve approval > 80% and happiness > 75%
+- **Social Stability**: Keep stability > 80% and unemployment < 6%
+- **Long-term Planning**: Sustainable policies over 20+ turns
 
 ### 🔄 **Turn System**
 - **Turn Duration**: 1 month (monthly progression)
 - **Action Points**: 3 per turn (reset each turn)
 - **Progression**: January 2024 → February 2024 → March 2024... (12 turns = 1 year)
 
-### 🎨 **User Interface**
+### � **Recent Updates & Improvements**
+
+#### **Force Graph Physics Enhancements**
+- **Topology Change Detection**: Intelligent detection of graph structure changes to optimize simulation
+- **Smooth Transitions**: Reduced energy injection for in-place updates to prevent jarring node movements
+- **Improved Stability**: Better handling of node positioning during turn progression
+- **Performance Optimization**: Only restarts simulation with full energy when topology actually changes
+
+#### **Game Loop Refinements**
+- **Removed Automatic Game Over**: Eliminated disruptive game-over conditions for continuous gameplay
+- **Streamlined Turn Processing**: Cleaner separation of concerns in turn advancement logic
+- **Enhanced Player Agency**: Players now determine their own success criteria and play duration
+- **Improved Game Flow**: Focus on strategic decision-making without forced interruptions
+
+### � **User Interface**
 - **Start Screen**: Clean introduction with game title and start button
 - **Top Navigation Bar**: Real-time budget display, turn counter, action points
 - **Force-Directed Canvas**: Dynamic D3.js physics-based node layout
@@ -201,9 +214,9 @@ When adjusting policies in the modal:
 2. **Assess Situation**: Review economic indicators and population metrics
 3. **Adjust Policies**: Click policy nodes, adjust sliders, preview changes
 4. **Apply Changes**: Confirm policy adjustments (consumes action points)
-5. **Advance Turn**: Click "Next Turn" to process quarterly results
+5. **Advance Turn**: Click "Next Turn" to process monthly results
 6. **Monitor Progress**: Watch indicators change based on policy decisions
-7. **Achieve Goals**: Work toward victory conditions or avoid game over
+7. **Set Your Own Goals**: Work toward your definition of success without forced interruptions
 
 ### 🔧 **Advanced Features**
 - **Score Calculation**: Comprehensive performance scoring system

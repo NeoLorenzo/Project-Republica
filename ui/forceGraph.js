@@ -13,7 +13,8 @@ let forceGraphContext = {
     width: 0,
     height: 0,
     boundaryPadding: 8,
-    physicsSettings: null
+    physicsSettings: null,
+    lastTopologySignature: ''
 };
 
 const defaultPhysicsSettings = {
@@ -321,6 +322,15 @@ function renderForceGraph(state) {
     );
     assignLinkCurvature(links);
 
+    const nodeSignature = [...nodeIds].sort().join('|');
+    const linkSignature = links
+        .map((link) => `${link.source}->${link.target}:${link.driver}`)
+        .sort()
+        .join('|');
+    const topologySignature = `${nodeSignature}::${linkSignature}`;
+    const isTopologyChanged = topologySignature !== forceGraphContext.lastTopologySignature;
+    forceGraphContext.lastTopologySignature = topologySignature;
+
     const degreeMap = new Map(nodes.map((node) => [node.id, 0]));
     links.forEach((link) => {
         degreeMap.set(link.source, (degreeMap.get(link.source) || 0) + 1);
@@ -450,7 +460,13 @@ function renderForceGraph(state) {
         .text((d) => d.value);
 
     applySimulationForces(nodes, links, width, height, maxMagnitude);
-    forceGraphContext.simulation.alpha(0.75).restart();
+    if (isTopologyChanged || previousNodes.size === 0) {
+        forceGraphContext.simulation.alpha(0.55).restart();
+    } else {
+        // In-place update: small energy injection to avoid explode/contract on every turn.
+        forceGraphContext.simulation.alphaTarget(0.03);
+        forceGraphContext.simulation.alpha(0.10).restart();
+    }
 }
 
 function destroyForceGraph() {
@@ -472,6 +488,7 @@ function destroyForceGraph() {
         width: 0,
         height: 0,
         boundaryPadding: 8,
-        physicsSettings: null
+        physicsSettings: null,
+        lastTopologySignature: ''
     };
 }
