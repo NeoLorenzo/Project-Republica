@@ -80,6 +80,27 @@
                 </div>
             </div>
         </div>
+
+        <div id="charts-modal" style="display: none;">
+            <div class="modal-content charts-modal-content">
+                <div class="charts-modal-header">
+                    <h3>Budget Breakdown</h3>
+                    <button id="charts-close-btn" type="button" aria-label="Close budget charts">&times;</button>
+                </div>
+                <div class="charts-grid">
+                    <section class="chart-panel">
+                        <h4>Government Income</h4>
+                        <div id="income-pie-chart" class="pie-chart"></div>
+                        <div id="income-chart-legend" class="chart-legend"></div>
+                    </section>
+                    <section class="chart-panel">
+                        <h4>Government Expenditure</h4>
+                        <div id="expenditure-pie-chart" class="pie-chart"></div>
+                        <div id="expenditure-chart-legend" class="chart-legend"></div>
+                    </section>
+                </div>
+            </div>
+        </div>
     </div>
     
     <script src="engine/state.js"></script>
@@ -92,3 +113,4 @@
     <script src="main.js"></script>
 </body>
 </html>
+

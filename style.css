@@ -285,6 +285,19 @@ body {
     z-index: 2000;
 }
 
+#charts-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2200;
+}
+
 .modal-content {
     background: var(--bg-secondary);
     border: 1px solid var(--glass-border);
@@ -292,6 +305,162 @@ body {
     padding: 2rem;
     width: 400px;
     backdrop-filter: blur(10px);
+}
+
+.charts-modal-content {
+    width: min(980px, 92vw);
+    max-height: 90vh;
+    height: min(760px, 90vh);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background:
+        radial-gradient(circle at top right, rgba(96, 165, 250, 0.12), transparent 46%),
+        radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.1), transparent 42%),
+        var(--bg-secondary);
+}
+
+.charts-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+#charts-close-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--glass-border);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+.charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.1rem;
+    min-height: 0;
+    flex: 1;
+}
+
+.chart-panel {
+    background:
+        linear-gradient(170deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0)),
+        var(--bg-primary);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 8px 22px rgba(0, 0, 0, 0.22);
+    display: grid;
+    grid-template-rows: auto minmax(240px, 280px) minmax(0, 1fr);
+    min-height: 0;
+}
+
+.chart-panel h4 {
+    color: var(--neutral);
+    margin-bottom: 0.3rem;
+    letter-spacing: 0.03em;
+}
+
+.pie-chart {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 0;
+    height: 100%;
+    background: radial-gradient(circle at center, rgba(96, 165, 250, 0.08), transparent 62%);
+    border-radius: 10px;
+    border: 1px dashed rgba(255, 255, 255, 0.08);
+    margin-bottom: 0.55rem;
+    overflow: hidden;
+}
+
+.chart-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 0.38rem;
+    overflow-y: auto;
+    min-height: 0;
+    height: 100%;
+    padding-right: 0.25rem;
+}
+
+.legend-item {
+    display: grid;
+    grid-template-columns: 12px 1fr auto auto;
+    gap: 0.55rem;
+    align-items: center;
+    font-size: 0.79rem;
+    padding: 0.32rem 0.42rem;
+    border-radius: 7px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.legend-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.16);
+}
+
+.legend-item.is-active {
+    background: rgba(96, 165, 250, 0.18);
+    border-color: rgba(96, 165, 250, 0.45);
+    transform: translateX(2px);
+}
+
+.chart-legend::-webkit-scrollbar {
+    width: 10px;
+}
+
+.chart-legend::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 999px;
+}
+
+.chart-legend::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(96, 165, 250, 0.75), rgba(59, 130, 246, 0.75));
+    border-radius: 999px;
+    border: 2px solid rgba(26, 26, 26, 0.45);
+}
+
+.chart-legend::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(125, 189, 255, 0.9), rgba(77, 146, 255, 0.9));
+}
+
+.chart-legend {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(96, 165, 250, 0.8) rgba(255, 255, 255, 0.05);
+}
+
+.legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.legend-label {
+    color: var(--text-secondary);
+}
+
+.legend-value {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.legend-percent {
+    color: var(--neutral);
+}
+
+.chart-empty {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    text-align: center;
+    margin: 0.8rem 0;
 }
 
 .modal-content h3 {
@@ -455,4 +624,10 @@ body {
     border-radius: 6px;
     padding: 0.4rem 0.5rem;
     cursor: pointer;
+}
+
+@media (max-width: 900px) {
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
 }

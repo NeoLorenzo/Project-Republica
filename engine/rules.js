@@ -475,30 +475,89 @@ function getPolicyPercent(state, policyId) {
     return clamp(typeof rawValue === 'number' ? rawValue : 0, 0, 100);
 }
 
+function getBudgetScaleFactor(state) {
+    const model = state?.budgetModel || {};
+    const fallbackGdp = Math.max(1, state?.economy?.gdp || 1);
+    const referenceGdp = Number(model.referenceGdp) > 0 ? Number(model.referenceGdp) : fallbackGdp;
+    const currentGdp = Math.max(1, state?.economy?.gdp || referenceGdp);
+    return currentGdp / referenceGdp;
+}
+
+function computeBudgetEntries(state, entries, valueKey) {
+    const scaleFactor = getBudgetScaleFactor(state);
+    return Object.entries(entries || {}).map(([policyId, entry]) => {
+        const pct = getPolicyPercent(state, policyId) / 100;
+        const baseValue = Number(entry?.[valueKey]) || 0;
+        const scale = entry?.gdpScaled === false ? 1 : scaleFactor;
+        const value = pct * baseValue * scale;
+        return {
+            policyId,
+            value
+        };
+    });
+}
+
+function toTitleWord(word) {
+    const upperAcronyms = {
+        al: 'AL',
+        nhr: 'NHR',
+        vat: 'VAT',
+        gdp: 'GDP',
+        sns: 'SNS'
+    };
+    const normalized = String(word || '').toLowerCase();
+    if (upperAcronyms[normalized]) return upperAcronyms[normalized];
+    if (!normalized) return '';
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+}
+
+function humanizePolicySegment(segment) {
+    const split = String(segment || '')
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        .replace(/[_-]+/g, ' ')
+        .split(/\s+/)
+        .filter(Boolean);
+    return split.map((word) => toTitleWord(word)).join(' ');
+}
+
+function formatBudgetPolicyLabel(policyId) {
+    if (!policyId) return 'Unknown';
+    if (!policyId.includes('.')) {
+        return humanizePolicySegment(policyId);
+    }
+    const [category, name] = policyId.split('.');
+    return `${humanizePolicySegment(category)}: ${humanizePolicySegment(name)}`;
+}
+
+function buildBudgetBreakdown(entries, total) {
+    const roundedTotal = Math.round(total);
+    const filtered = entries
+        .filter((item) => item.value > 0)
+        .map((item) => ({
+            policyId: item.policyId,
+            label: formatBudgetPolicyLabel(item.policyId),
+            value: Math.round(item.value)
+        }))
+        .sort((a, b) => b.value - a.value)
+        .map((item) => ({
+            ...item,
+            percent: roundedTotal > 0 ? (item.value / roundedTotal) * 100 : 0
+        }));
+    return {
+        total: roundedTotal,
+        slices: filtered
+    };
+}
+
 // Calculate annualized budget arithmetic and realize only monthly debt accumulation.
 function calculateBudget(state) {
     const model = state?.budgetModel || {};
     const revenues = model.revenues || {};
     const costs = model.costs || {};
-    const referenceGdp = Number(model.referenceGdp) > 0 ? Number(model.referenceGdp) : Math.max(1, state.economy.gdp || 1);
-    const currentGdp = Math.max(1, state.economy.gdp || referenceGdp);
-    const gdpFactor = currentGdp / referenceGdp;
-
-    let annualIncome = 0;
-    Object.entries(revenues).forEach(([policyId, entry]) => {
-        const pct = getPolicyPercent(state, policyId) / 100;
-        const baseRevenue = Number(entry?.baseRevenue) || 0;
-        const scale = entry?.gdpScaled === false ? 1 : gdpFactor;
-        annualIncome += pct * baseRevenue * scale;
-    });
-
-    let annualExpenditure = 0;
-    Object.entries(costs).forEach(([policyId, entry]) => {
-        const pct = getPolicyPercent(state, policyId) / 100;
-        const baseCost = Number(entry?.baseCost) || 0;
-        const scale = entry?.gdpScaled === false ? 1 : gdpFactor;
-        annualExpenditure += pct * baseCost * scale;
-    });
+    const annualIncomeEntries = computeBudgetEntries(state, revenues, 'baseRevenue');
+    const annualExpenditureEntries = computeBudgetEntries(state, costs, 'baseCost');
+    const annualIncome = annualIncomeEntries.reduce((sum, item) => sum + item.value, 0);
+    const annualExpenditure = annualExpenditureEntries.reduce((sum, item) => sum + item.value, 0);
 
     const annualDeficit = annualExpenditure - annualIncome;
     const monthlyDeficit = annualDeficit / 12;
@@ -509,6 +568,19 @@ function calculateBudget(state) {
         expenditure: Math.round(annualExpenditure),
         deficit: Math.round(annualDeficit),
         debt: Math.round(nextDebt)
+    };
+}
+
+function calculateBudgetBreakdown(state) {
+    const model = state?.budgetModel || {};
+    const revenueEntries = computeBudgetEntries(state, model.revenues || {}, 'baseRevenue');
+    const costEntries = computeBudgetEntries(state, model.costs || {}, 'baseCost');
+    const annualIncome = revenueEntries.reduce((sum, item) => sum + item.value, 0);
+    const annualExpenditure = costEntries.reduce((sum, item) => sum + item.value, 0);
+
+    return {
+        income: buildBudgetBreakdown(revenueEntries, annualIncome),
+        expenditure: buildBudgetBreakdown(costEntries, annualExpenditure)
     };
 }
 

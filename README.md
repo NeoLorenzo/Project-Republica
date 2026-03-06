@@ -49,15 +49,16 @@ A clean, modern, dashboard-style interface.
 ```
 
 ## 🚀 Ready to Play
-The MVP is now fully functional with advanced physics simulation! You can:
+The MVP is now fully functional with advanced physics simulation and budget visualization! You can:
 1. Start the game from the start screen
 2. **Interact with force-directed nodes** that self-organize based on relationships
 3. **Drag and reposition nodes** to customize your view
 4. Adjust policies through the modal interface
-5. **Tune physics parameters** with the settings panel
-6. Advance turns and see the consequences
-7. Monitor economic, social, and political indicators
-8. Experience game over or victory conditions
+5. **View detailed budget breakdowns** with the new charts modal (📊 button)
+6. **Tune physics parameters** with the settings panel
+7. Advance turns and see the consequences
+8. Monitor economic, social, and political indicators
+9. Experience game over or victory conditions
 
 ## 🎮 How to Run
 1. Start the local development server: `python -m http.server 8000`
@@ -186,6 +187,7 @@ carbonTax,inflation,0.25,2         # Carbon tax causes inflation
 - **Top Navigation Bar**: Real-time budget display, turn counter, action points
 - **Force-Directed Canvas**: Dynamic D3.js physics-based node layout
 - **Interactive Modals**: Policy adjustment sliders with real-time preview
+- **Budget Charts Modal**: New pie chart visualization for government income and expenditure breakdown
 - **Visual Feedback**: Hover states, color-coded indicators, smooth transitions
 - **Physics Controls**: Settings panel for adjusting graph simulation parameters
 
@@ -206,6 +208,16 @@ carbonTax,inflation,0.25,2         # Carbon tax causes inflation
 - **Link Distance**: Preferred distance between connected nodes (120px to 320px)
 - **Reset Defaults**: Restore original physics parameters
 
+### 📊 **Budget Charts Modal**
+- **Interactive Pie Charts**: Visual breakdown of government income and expenditure sources
+- **Detailed Legend**: Scrollable legend with color-coded policy categories and percentages
+- **Real-time Updates**: Charts update dynamically when policies change
+- **Policy Breakdown**: Shows individual contribution of each policy to total budget
+- **Human-readable Labels**: Policy names formatted for better readability (e.g., "AL Taxes" instead of "alTaxes")
+- **Responsive Design**: Adapts to different screen sizes with grid layout
+- **Glassmorphism Styling**: Consistent with game's dark theme aesthetic
+- **Accessibility**: Keyboard navigation and screen reader support
+
 ### 📊 **Real-time Preview System**
 When adjusting policies in the modal:
 - **Live Budget Preview**: Shows projected income, expenditure, deficit changes
@@ -217,12 +229,12 @@ When adjusting policies in the modal:
 
 #### **Engine (`/engine`) - Pure Mathematics**
 - **state.js**: Portugal's initial conditions and policy management
-- **rules.js**: Economic formulas, policy multipliers, and CSV-driven relationship simulation
+- **rules.js**: Economic formulas, policy multipliers, CSV-driven relationship simulation, and budget breakdown calculations
 - **gameLoop.js**: Turn processing with relationship-based metric evolution
 - **relationships.csv**: Data-driven relationship definitions with weights and inertia
 
 #### **UI (`/ui`) - Pure Visuals**
-- **render.js**: DOM updates and visual rendering logic
+- **render.js**: DOM updates, visual rendering logic, and budget chart rendering functions
 - **inputs.js**: User interaction handling and accessibility
 - **forceGraph.js**: D3.js physics simulation and force-directed graph rendering
 

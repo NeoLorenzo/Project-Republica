@@ -77,6 +77,11 @@ function setupEventListeners() {
     if (settingsBtn) {
         settingsBtn.addEventListener('click', toggleGraphPhysicsPanel);
     }
+
+    const chartsBtn = document.getElementById('charts-btn');
+    if (chartsBtn) {
+        chartsBtn.addEventListener('click', openChartsModal);
+    }
     
     // Modal buttons
     const applyBtn = document.getElementById('apply-btn');
@@ -88,6 +93,20 @@ function setupEventListeners() {
     
     if (cancelBtn) {
         cancelBtn.addEventListener('click', closePolicyModal);
+    }
+
+    const chartsCloseBtn = document.getElementById('charts-close-btn');
+    if (chartsCloseBtn) {
+        chartsCloseBtn.addEventListener('click', closeChartsModal);
+    }
+
+    const chartsModal = document.getElementById('charts-modal');
+    if (chartsModal) {
+        chartsModal.addEventListener('click', (event) => {
+            if (event.target === chartsModal) {
+                closeChartsModal();
+            }
+        });
     }
     
     // Policy slider
@@ -184,6 +203,24 @@ function closePolicyModal() {
     const modal = document.getElementById('policy-modal');
     if (modal) {
         modal.style.display = 'none';
+    }
+}
+
+function openChartsModal() {
+    closePolicyModal();
+    const chartsModal = document.getElementById('charts-modal');
+    if (!chartsModal) return;
+
+    chartsModal.style.display = 'flex';
+    if (typeof renderBudgetChartsModal === 'function' && typeof getGameState === 'function') {
+        renderBudgetChartsModal(getGameState());
+    }
+}
+
+function closeChartsModal() {
+    const chartsModal = document.getElementById('charts-modal');
+    if (chartsModal) {
+        chartsModal.style.display = 'none';
     }
 }
 

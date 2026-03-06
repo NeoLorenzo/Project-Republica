@@ -61,7 +61,15 @@ function updatePreviewDisplay(budget, population) {
 // Handle keyboard shortcuts
 function setupKeyboardShortcuts() {
     document.addEventListener('keydown', function(event) {
-        // Prevent shortcuts when modal is open
+        const chartsModal = document.getElementById('charts-modal');
+        if (chartsModal && chartsModal.style.display === 'flex') {
+            if (event.key === 'Escape') {
+                closeChartsModal();
+            }
+            return;
+        }
+
+        // Prevent shortcuts when policy modal is open
         const modal = document.getElementById('policy-modal');
         if (modal && modal.style.display === 'flex') {
             if (event.key === 'Escape') {
@@ -124,31 +132,31 @@ function setupContextMenuHandler() {
     });
 }
 
+function bindModalFocusTrap(modal) {
+    if (!modal) return;
+    modal.addEventListener('keydown', function(event) {
+        if (event.key !== 'Tab') return;
+        const focusableElements = modal.querySelectorAll('button, input, [tabindex]:not([tabindex="-1"])');
+        if (!focusableElements.length) return;
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (event.shiftKey) {
+            if (document.activeElement === firstElement) {
+                event.preventDefault();
+                lastElement.focus();
+            }
+        } else if (document.activeElement === lastElement) {
+            event.preventDefault();
+            firstElement.focus();
+        }
+    });
+}
+
 // Handle focus management for accessibility
 function setupFocusManagement() {
-    // Trap focus in modal
-    const modal = document.getElementById('policy-modal');
-    if (modal) {
-        modal.addEventListener('keydown', function(event) {
-            if (event.key === 'Tab') {
-                const focusableElements = modal.querySelectorAll('button, input, [tabindex]:not([tabindex="-1"])');
-                const firstElement = focusableElements[0];
-                const lastElement = focusableElements[focusableElements.length - 1];
-                
-                if (event.shiftKey) {
-                    if (document.activeElement === firstElement) {
-                        event.preventDefault();
-                        lastElement.focus();
-                    }
-                } else {
-                    if (document.activeElement === lastElement) {
-                        event.preventDefault();
-                        firstElement.focus();
-                    }
-                }
-            }
-        });
-    }
+    bindModalFocusTrap(document.getElementById('policy-modal'));
+    bindModalFocusTrap(document.getElementById('charts-modal'));
 }
 
 // Return to start screen

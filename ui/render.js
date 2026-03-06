@@ -11,6 +11,11 @@ function renderGameUI() {
     updateTopBar(state);
     renderPolicyNodes(state);
     updateTurnCounter(state);
+
+    const chartsModal = document.getElementById('charts-modal');
+    if (chartsModal && chartsModal.style.display === 'flex') {
+        renderBudgetChartsModal(state);
+    }
 }
 
 function updateTopBar(state) {
@@ -180,7 +185,165 @@ function hideTooltip() {
     document.querySelectorAll('.tooltip').forEach((tooltip) => tooltip.remove());
 }
 
+function getBudgetChartPaletteColor(policyId) {
+    const palette = [
+        '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4',
+        '#8b5cf6', '#f97316', '#22c55e', '#eab308', '#ec4899',
+        '#14b8a6', '#84cc16', '#f43f5e', '#0ea5e9', '#6366f1'
+    ];
+    const seed = String(policyId || '');
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) {
+        hash = ((hash << 5) - hash) + seed.charCodeAt(i);
+        hash |= 0;
+    }
+    const idx = Math.abs(hash) % palette.length;
+    return palette[idx];
+}
+
+function renderBudgetPieChart(containerId, legendId, breakdown) {
+    const container = document.getElementById(containerId);
+    const legend = document.getElementById(legendId);
+    if (!container || !legend) return;
+
+    const total = breakdown?.total || 0;
+    const slices = breakdown?.slices || [];
+
+    container.innerHTML = '';
+    legend.innerHTML = '';
+
+    if (!slices.length) {
+        container.innerHTML = '<p class="chart-empty">No data available</p>';
+        legend.innerHTML = '<p class="chart-empty">No data available</p>';
+        return;
+    }
+
+    const availableWidth = container.clientWidth || 260;
+    const availableHeight = container.clientHeight || 260;
+    const width = Math.max(200, Math.min(300, availableWidth, availableHeight));
+    const height = width;
+    const radius = Math.min(width, height) / 2 - 10;
+    const innerRadius = radius * 0.54;
+
+    const svg = d3.select(container)
+        .append('svg')
+        .attr('width', width)
+        .attr('height', height)
+        .attr('viewBox', `0 0 ${width} ${height}`)
+        .style('filter', 'drop-shadow(0 8px 16px rgba(0, 0, 0, 0.35))');
+
+    const g = svg.append('g')
+        .attr('transform', `translate(${width / 2}, ${height / 2})`);
+
+    const pie = d3.pie().value((d) => d.value).sort(null);
+    const arcData = pie(slices);
+
+    g.append('circle')
+        .attr('r', innerRadius)
+        .attr('fill', 'rgba(255, 255, 255, 0.04)')
+        .attr('stroke', 'rgba(255, 255, 255, 0.14)')
+        .attr('stroke-width', 1.2);
+
+    const paths = g.selectAll('path')
+        .data(arcData)
+        .enter()
+        .append('path')
+        .attr('d', d3.arc().innerRadius(innerRadius).outerRadius(innerRadius))
+        .attr('fill', (d) => getBudgetChartPaletteColor(d.data.policyId))
+        .attr('stroke', 'var(--bg-secondary)')
+        .attr('stroke-width', 1.5)
+        .style('transition', 'transform 120ms ease, filter 140ms ease')
+        .style('transform-origin', 'center');
+
+    const pathNodes = paths.nodes();
+    const legendItems = [];
+    function setLinkedHoverState(activeIndex) {
+        pathNodes.forEach((node, idx) => {
+            const selected = idx === activeIndex;
+            d3.select(node)
+                .style('transform', selected ? 'scale(1.03)' : 'scale(1)')
+                .style('filter', selected ? 'brightness(1.12)' : 'none');
+            if (legendItems[idx]) {
+                legendItems[idx].classList.toggle('is-active', selected);
+            }
+        });
+    }
+
+    paths
+        .on('mousemove', function(event, d) {
+            setLinkedHoverState(d.index);
+            hideTooltip();
+            const tooltip = document.createElement('div');
+            tooltip.id = 'budget-chart-tooltip';
+            tooltip.className = 'tooltip';
+            tooltip.innerHTML = `
+                <strong>${d.data.label}</strong><br>
+                \u20AC${d.data.value.toLocaleString()}M<br>
+                ${d.data.percent.toFixed(1)}%
+            `;
+            tooltip.style.left = `${event.pageX + 10}px`;
+            tooltip.style.top = `${event.pageY - 30}px`;
+            tooltip.style.border = `1px solid ${getBudgetChartPaletteColor(d.data.policyId)}`;
+            document.body.appendChild(tooltip);
+        })
+        .on('mouseleave', function() {
+            setLinkedHoverState(-1);
+            hideTooltip();
+        });
+
+    paths.transition()
+        .duration(500)
+        .ease(d3.easeCubicOut)
+        .attrTween('d', function(d) {
+            const interpolateOuter = d3.interpolate(innerRadius, radius);
+            return function(t) {
+                return d3.arc().innerRadius(innerRadius).outerRadius(interpolateOuter(t))(d);
+            };
+        });
+
+    g.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('dy', '-0.2em')
+        .attr('fill', 'var(--text-secondary)')
+        .attr('font-size', '11px')
+        .text('TOTAL');
+
+    g.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('dy', '1.15em')
+        .attr('fill', 'var(--text-primary)')
+        .attr('font-size', '13px')
+        .attr('font-weight', '700')
+        .text(`\u20AC${total.toLocaleString()}M`);
+
+    slices.forEach((slice) => {
+        const item = document.createElement('div');
+        item.className = 'legend-item';
+        const sliceIndex = legendItems.length;
+        item.innerHTML = `
+            <span class="legend-color" style="background:${getBudgetChartPaletteColor(slice.policyId)}"></span>
+            <span class="legend-label">${slice.label}</span>
+            <span class="legend-value">\u20AC${slice.value.toLocaleString()}M</span>
+            <span class="legend-percent">${slice.percent.toFixed(1)}%</span>
+        `;
+        item.addEventListener('mouseenter', () => setLinkedHoverState(sliceIndex));
+        item.addEventListener('mouseleave', () => setLinkedHoverState(-1));
+        legendItems.push(item);
+        legend.appendChild(item);
+    });
+}
+
+function renderBudgetChartsModal(state) {
+    if (!state || typeof calculateBudgetBreakdown !== 'function' || typeof d3 === 'undefined') return;
+    const breakdown = calculateBudgetBreakdown(state);
+    renderBudgetPieChart('income-pie-chart', 'income-chart-legend', breakdown.income);
+    renderBudgetPieChart('expenditure-pie-chart', 'expenditure-chart-legend', breakdown.expenditure);
+}
 function openPolicyModal(policy, state) {
+    if (typeof closeChartsModal === 'function') {
+        closeChartsModal();
+    }
+
     const modal = document.getElementById('policy-modal');
     const modalTitle = document.getElementById('modal-title');
     const modalDescription = document.getElementById('modal-description');
@@ -291,3 +454,4 @@ window.addEventListener('scroll', hideTooltip, true);
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) hideTooltip();
 });
+
