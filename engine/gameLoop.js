@@ -66,8 +66,8 @@ function getPerformanceIndicators(state) {
     return {
         economy: {
             gdpGrowth: (state.economy.gdpGrowth * 100).toFixed(1) + '%',
-            unemployment: state.economy.unemployment.toFixed(1) + '%',
-            inflation: state.economy.inflation.toFixed(1) + '%',
+            unemployment_rate: state.economy.unemployment_rate.toFixed(1) + '%',
+            inflation_consumer_prices: state.economy.inflation_consumer_prices.toFixed(1) + '%',
             debtRatio: ((state.economy.debt / state.economy.gdp) * 100).toFixed(1) + '%'
         },
         population: {
@@ -87,3 +87,4 @@ function getPerformanceIndicators(state) {
         }
     };
 }
+

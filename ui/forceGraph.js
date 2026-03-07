@@ -32,22 +32,81 @@ const defaultPhysicsSettings = {
 // Using a fixed domain avoids "strongest link always looks identical" artifacts.
 const LINK_VISUAL_MAGNITUDE_MAX = 4.0;
 
+const OUTCOME_NODE_DISPLAY = {
+    gdp: { name: 'GDP', icon: '\u{1F4C8}', color: 'var(--economy)', unit: 'eur_b' },
+    health: { name: 'Health', icon: '\u2764\uFE0F', color: 'var(--health)', unit: 'percent' },
+    happiness: { name: 'Happiness', icon: '\u{1F60A}', color: 'var(--welfare)', unit: 'percent' },
+    education: { name: 'Education', icon: '\u{1F393}', color: 'var(--education)', unit: 'percent' },
+    safety: { name: 'Safety', icon: '\u{1F6E1}\uFE0F', color: 'var(--law-order)', unit: 'percent' },
+    unemployment_rate: { name: 'Unemployment Rate', icon: '\u{1F465}', color: 'var(--warning)', unit: 'percent_1' },
+    inflation_consumer_prices: { name: 'Inflation, Consumer Prices', icon: '\u{1F4CA}', color: 'var(--neutral)', unit: 'percent_1' },
+    consumption: { name: 'Consumption', icon: '\u{1F6D2}', color: 'var(--economy)', unit: 'percent_1' },
+    investment: { name: 'Investment', icon: '\u{1F3D7}\uFE0F', color: 'var(--economy)', unit: 'percent_1' },
+    govSpending: { name: 'Gov Stimulus', icon: '\u{1F3DB}\uFE0F', color: 'var(--transport)', unit: 'percent_1' },
+    netExports: { name: 'Net Exports', icon: '\u{1F6A2}', color: 'var(--neutral)', unit: 'percent_1' },
+    rentBurden: { name: 'Rent Burden', icon: '\u{1F3D8}\uFE0F', color: 'var(--warning)', unit: 'percent_1' },
+    youthIndependence: { name: 'Youth Indep.', icon: '\u{1F3E1}', color: 'var(--neutral)', unit: 'percent_1' },
+    nominal_minimum_wage: { name: 'Nominal Minimum Wage', icon: '\u{1F4B5}', color: 'var(--economy)', unit: 'eur_int' },
+    average_annual_real_wages: { name: 'Average Real Wages', icon: '\u{1F4B6}', color: 'var(--economy)', unit: 'eur_int' },
+    central_bank_policy_rate: { name: 'Policy Rate', icon: '\u{1F3E6}', color: 'var(--neutral)', unit: 'percent_1' },
+    co2_emissions_per_capita: { name: 'CO2 per Capita', icon: '\u{1F30D}', color: 'var(--health)', unit: 'decimal_2' },
+    air_pollution_pm25: { name: 'Air Pollution PM2.5', icon: '\u{1F32B}\uFE0F', color: 'var(--health)', unit: 'decimal_1' },
+    women_in_parliament: { name: 'Women in Parliament', icon: '\u{1F3DB}\uFE0F', color: 'var(--law-order)', unit: 'percent_1' },
+    fixed_broadband_subscriptions: { name: 'Fixed Broadband', icon: '\u{1F4F6}', color: 'var(--transport)', unit: 'decimal_1' }
+};
+
+function getOutcomeNodeStateValue(state, nodeId) {
+    if (state?.economy && typeof state.economy[nodeId] === 'number') return state.economy[nodeId];
+    if (state?.population && typeof state.population[nodeId] === 'number') return state.population[nodeId];
+    if (state?.politics && typeof state.politics[nodeId] === 'number') return state.politics[nodeId];
+    return null;
+}
+
+function humanizeOutcomeId(nodeId) {
+    return String(nodeId || '')
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (m) => m.toUpperCase());
+}
+
+function formatOutcomeValueByUnit(value, unit) {
+    if (!Number.isFinite(value)) return 'n/a';
+    switch (unit) {
+        case 'eur_b':
+            return `€${(value / 1000).toFixed(1)}B`;
+        case 'eur_int':
+            return `€${Math.round(value).toLocaleString()}`;
+        case 'percent':
+            return `${Math.round(value)}%`;
+        case 'percent_1':
+            return `${value.toFixed(1)}%`;
+        case 'decimal_2':
+            return value.toFixed(2);
+        case 'decimal_1':
+            return value.toFixed(1);
+        default:
+            return value.toFixed(1);
+    }
+}
+
 function getOutcomeGraphNodes(state) {
-    return [
-        { id: 'gdp', name: 'GDP', icon: '\u{1F4C8}', value: `€${(state.economy.gdp / 1000).toFixed(1)}B`, color: 'var(--economy)', nodeType: 'outcome' },
-        { id: 'health', name: 'Health', icon: '\u2764\uFE0F', value: `${state.population.health}%`, color: 'var(--health)', nodeType: 'outcome' },
-        { id: 'happiness', name: 'Happiness', icon: '\u{1F60A}', value: `${state.population.happiness}%`, color: 'var(--welfare)', nodeType: 'outcome' },
-        { id: 'education', name: 'Education', icon: '\u{1F393}', value: `${state.population.education}%`, color: 'var(--education)', nodeType: 'outcome' },
-        { id: 'safety', name: 'Safety', icon: '\u{1F6E1}\uFE0F', value: `${state.population.safety}%`, color: 'var(--law-order)', nodeType: 'outcome' },
-        { id: 'unemployment', name: 'Unemployment', icon: '\u{1F465}', value: `${state.economy.unemployment.toFixed(1)}%`, color: 'var(--warning)', nodeType: 'outcome' },
-        { id: 'inflation', name: 'Inflation', icon: '\u{1F4CA}', value: `${state.economy.inflation.toFixed(1)}%`, color: 'var(--neutral)', nodeType: 'outcome' },
-        { id: 'consumption', name: 'Consumption', icon: '\u{1F6D2}', value: `${Math.round(state.economy.consumption)}%`, color: 'var(--economy)', nodeType: 'outcome' },
-        { id: 'investment', name: 'Investment', icon: '\u{1F3D7}\uFE0F', value: `${Math.round(state.economy.investment)}%`, color: 'var(--economy)', nodeType: 'outcome' },
-        { id: 'govSpending', name: 'Gov Stimulus', icon: '\u{1F3DB}\uFE0F', value: `${Math.round(state.economy.govSpending)}%`, color: 'var(--transport)', nodeType: 'outcome' },
-        { id: 'netExports', name: 'Net Exports', icon: '\u{1F6A2}', value: `${Math.round(state.economy.netExports)}%`, color: 'var(--neutral)', nodeType: 'outcome' },
-        { id: 'rentBurden', name: 'Rent Burden', icon: '\u{1F3D8}\uFE0F', value: `${state.population.rentBurden}%`, color: 'var(--warning)', nodeType: 'outcome' },
-        { id: 'youthIndependence', name: 'Youth Indep.', icon: '\u{1F3E1}', value: `${state.population.youthIndependence}%`, color: 'var(--neutral)', nodeType: 'outcome' }
-    ];
+    const nodeIds = Object.keys(state?.simulation?.nodes || {});
+    return nodeIds
+        .map((id) => {
+            const rawValue = getOutcomeNodeStateValue(state, id);
+            if (!Number.isFinite(rawValue)) return null;
+            const display = OUTCOME_NODE_DISPLAY[id] || {};
+            const unit = display.unit || 'decimal_1';
+            return {
+                id,
+                name: display.name || humanizeOutcomeId(id),
+                icon: display.icon || '\u{1F4CA}',
+                value: formatOutcomeValueByUnit(rawValue, unit),
+                color: display.color || 'var(--neutral)',
+                nodeType: 'outcome'
+            };
+        })
+        .filter(Boolean);
 }
 
 function getPolicyGraphNodes() {
@@ -562,5 +621,9 @@ function destroyForceGraph() {
         lastTopologySignature: ''
     };
 }
+
+
+
+
 
 

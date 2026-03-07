@@ -99,10 +99,10 @@ function showOutcomeTooltip(event, node, state) {
         case 'safety':
             details = `Police Funding: ${getPolicyValue('policeSpending')}%`;
             break;
-        case 'unemployment':
+        case 'unemployment_rate':
             details = 'Labor market pressure';
             break;
-        case 'inflation':
+        case 'inflation_consumer_prices':
             details = 'Target: 2.0%';
             break;
         case 'consumption':
@@ -454,4 +454,5 @@ window.addEventListener('scroll', hideTooltip, true);
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) hideTooltip();
 });
+
 
