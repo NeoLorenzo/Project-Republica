@@ -12,14 +12,11 @@ Execution order:
    - `calculateBudget(state)` (deterministic arithmetic authority for budget nodes)
 4. Derived deterministic metric recomputation:
    - `recomputeDerivedEconomyMetrics(state)` (currently computes `debt_to_gdp`)
-5. Political metric recomputation:
-   - `calculatePoliticalMetrics(state)`
-6. Turn advancement:
+5. Turn advancement:
    - increment month/year counters
-7. Reset action points.
 
 ## Why Order Matters
-- Relationship simulation must run before budget/politics so downstream arithmetic uses latest state.
+- Relationship simulation must run before budget/derived metrics so downstream arithmetic uses latest state.
 - Budget arithmetic must run before derived deterministic metrics (for example `debt_to_gdp`).
 - Reordering changes outputs and invalidates calibration baselines.
 

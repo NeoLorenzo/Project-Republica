@@ -21,20 +21,15 @@ function processNextTurn() {
         stepRelationshipSimulation(state);
     }
 
-    // Recalculate budget and political metrics from updated state.
+    // Recalculate budget and derived economy metrics from updated state.
     const newBudget = calculateBudget(state);
-    const newPoliticalMetrics = calculatePoliticalMetrics(state);
     state.budget = newBudget;
     if (typeof recomputeDerivedEconomyMetrics === 'function') {
         recomputeDerivedEconomyMetrics(state);
     }
-    state.politics = { ...state.politics, ...newPoliticalMetrics };
     
     // Advance turn
     advanceTurn(state);
-    
-    // Reset action points
-    state.politics.actionPoints = 3;
     
     console.log('Turn processed successfully');
     console.log('New state:', state);
@@ -76,11 +71,6 @@ function getPerformanceIndicators(state) {
             health: state.population.health + '%',
             education: state.population.education + '%',
             safety: state.population.safety + '%'
-        },
-        politics: {
-            approval: state.politics.approval + '%',
-            stability: state.politics.stability + '%',
-            corruption: state.politics.corruption + '%'
         },
         budget: {
             deficit: '€' + state.budget.deficit.toLocaleString() + 'M',

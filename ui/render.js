@@ -77,10 +77,6 @@ function updateTopBar(state) {
     }
     if (debt) debt.textContent = `Debt: \u20AC${roundedDebt.toLocaleString()}M`;
 
-    const approval = document.getElementById('approval');
-    const stability = document.getElementById('stability');
-    if (approval) approval.textContent = `Approval: ${Math.round(state.politics.approval)}%`;
-    if (stability) stability.textContent = `Stability: ${Math.round(state.politics.stability)}%`;
 }
 
 function updateTurnCounter(state) {
@@ -94,11 +90,6 @@ function updateTurnCounter(state) {
         turnCounter.textContent = `Turn ${state.game.turn} - ${monthName} ${state.game.year}`;
     }
 
-    const actionPoints = document.getElementById('action-points');
-    if (actionPoints) {
-        actionPoints.textContent = state.politics.actionPoints;
-        actionPoints.style.color = state.politics.actionPoints > 0 ? 'var(--text-primary)' : 'var(--negative)';
-    }
 }
 
 function renderPolicyNodes(state) {

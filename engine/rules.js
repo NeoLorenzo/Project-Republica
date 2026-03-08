@@ -1280,38 +1280,3 @@ function calculateEconomicIndicators(state) {
     };
 }
 
-function calculatePoliticalMetrics(state) {
-    const happiness = state.population.happiness;
-    const safety = state.population.safety;
-    const health = state.population.health;
-    const education = state.population.education;
-    const rentBurden = state.population.rentBurden;
-    const unemployment_rate = state.economy.unemployment_rate;
-    const inflation_consumer_prices = state.economy.inflation_consumer_prices;
-    const deficitImpact = Math.abs(state.budget.deficit) / 2000;
-
-    let approval = state.politics.approval;
-    approval += (happiness - 60) * 0.08;
-    approval += (state.population.youthIndependence - 40) * 0.04;
-    approval -= (rentBurden - 45) * 0.06;
-    approval -= (unemployment_rate - 6.5) * 1.1;
-    approval -= Math.abs(inflation_consumer_prices - 2) * 1.2;
-    approval -= deficitImpact;
-    approval = clamp(approval, 0, 100);
-
-    let stability = state.politics.stability;
-    stability += (safety - 75) * 0.08;
-    stability += (health - 65) * 0.05;
-    stability += (education - 62) * 0.04;
-    stability -= (rentBurden - 45) * 0.05;
-    stability -= Math.abs(unemployment_rate - 6.5) * 0.6;
-    stability = clamp(stability, 0, 100);
-
-    return {
-        approval,
-        stability
-    };
-}
-
-
-

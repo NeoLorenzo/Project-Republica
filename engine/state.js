@@ -76,15 +76,6 @@ const portugalState = {
         fixed_broadband_subscriptions: 42.0
     },
 
-    // Political metrics
-    politics: {
-        approval: 42, // Challenging political environment
-        stability: 68, // Moderate stability
-        corruption: 38, // Ongoing corruption concerns
-        women_in_parliament: 36.0,
-        actionPoints: 3 // available per turn
-    },
-
     // Game state - Starting January 2024
     game: {
         turn: 1,

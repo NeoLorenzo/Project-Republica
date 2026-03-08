@@ -92,10 +92,10 @@ Success:
 Only after graph-side calibration is reasonably good.
 
 Reason:
-- budget/politics formulas can dominate some outcomes; if they are disconnected from graph outputs, some targets stay flat or insensitive.
+- budget/derived-metric formulas can dominate some outcomes; if they are disconnected from graph outputs, some targets stay flat or insensitive.
 
 What to tune:
-- bridge coefficients from graph outputs into budget/political equations
+- bridge coefficients from graph outputs into budget/derived-metric equations
 
 Success:
 - previously stubborn metrics become controllable without destabilizing core metrics

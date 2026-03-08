@@ -2,7 +2,7 @@
 
 ## Module Boundaries
 - `engine/state.js`: baseline state values, policy storage, initialization
-- `engine/rules.js`: node/relationship registry parsing, simulation math, budget/political helper math
+- `engine/rules.js`: node/relationship registry parsing, simulation math, budget/derived-metric helper math
 - `engine/gameLoop.js`: turn orchestration (`processNextTurn`)
 - `ui/render.js`: DOM rendering
 - `ui/inputs.js`: user input wiring
@@ -18,8 +18,7 @@
    - relationship simulation step executes (`stepRelationshipSimulation`)
    - budget recalculates (`calculateBudget`)
    - derived deterministic metrics recalculate (`recomputeDerivedEconomyMetrics`)
-   - political metrics recalculate (`calculatePoliticalMetrics`)
-   - turn date advances and action points reset
+   - turn date advances
 6. UI re-renders current state.
 
 ## Computation Model

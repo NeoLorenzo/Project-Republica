@@ -2,17 +2,13 @@
 
 ## Core Loop
 - One turn represents one month.
-- Player adjusts policy levers (subject to action points).
-- Turn processing applies simulation dynamics and recomputes budget/politics.
+- Player adjusts policy levers.
+- Turn processing applies simulation dynamics and recomputes budget/derived metrics.
 
 ## Player Control vs Simulation Control
 - Player directly controls policy nodes (`state.policies`).
 - Simulation updates simulation-enabled metric nodes via approved relationships and inertia.
 - Deterministic accounting/derived metrics (for example budget nodes and `debt_to_gdp`) are computed by arithmetic helpers, not weighted edge propagation.
-
-## Action Points
-- Default: 3 action points per turn.
-- Reset each turn after processing.
 
 ## Win / Lose Conditions
 - No enforced runtime win/lose gate is currently documented in engine turn logic.

@@ -1,6 +1,6 @@
 # Project Republica: Portugal Simulation
 
-Project Republica is a browser-based political and socio-economic simulation focused on Portugal (January 2024 baseline). The project separates simulation math from UI rendering and uses a CSV-driven relationship graph.
+Project Republica is a browser-based country-management and socio-economic simulation focused on Portugal (January 2024 baseline). The project separates simulation math from UI rendering and uses a CSV-driven relationship graph.
 
 ## Live Deployment
 - Public URL: `https://neolorenzo.github.io/Project-Republica/`

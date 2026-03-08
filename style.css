@@ -131,18 +131,6 @@ body {
     gap: 1rem;
 }
 
-.action-points {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background: var(--warning);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-    font-size: 1.2rem;
-}
-
 .top-buttons {
     display: flex;
     gap: 1rem;

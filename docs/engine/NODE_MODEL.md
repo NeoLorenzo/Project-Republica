@@ -18,7 +18,7 @@ Examples:
 
 ### Simulation Metric Nodes (Endogenous)
 - Tracked under `state.simulation.nodes` with normalized values.
-- Synced into `state.economy`, `state.population`, `state.politics`.
+- Synced into `state.economy` and `state.population`.
 - Evolve via inbound approved edges + inertia.
 - Metrics are immutable to the player.
 
