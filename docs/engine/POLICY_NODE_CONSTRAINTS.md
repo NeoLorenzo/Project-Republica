@@ -10,34 +10,17 @@ Implication:
 This preserves player agency: government policy is set by the player, not dictated by model feedback.
 
 ## Policy Node IDs
-From runtime policy-node list in `engine/rules.js`:
-- `incomeTax`
-- `corporateTax`
-- `vat`
-- `healthcareSpending`
-- `educationSpending`
-- `welfareSpending`
-- `transportSpending`
-- `digitalInfrastructure`
-- `policeSpending`
-- `justiceSpending`
-- `greenEnergy`
-- `carbonTax`
-- `housingPolicy.maisHabitacao`
-- `housingPolicy.goldenVisa`
-- `housingPolicy.alTaxes`
-- `housingPolicy.rentControl`
-- `laborPolicy.minimumWage`
-- `laborPolicy.fourDayWeek`
-- `laborPolicy.youthJobs`
-- `taxPolicy.nhrRegime`
-- `taxPolicy.wealthTax`
+Policy IDs are sourced from `engine/policies.csv`.
+
+Runtime contract:
+- policies are mutable by player
+- metrics are immutable by player
 
 ## Edge Review Rule
-Any row in `relationships.csv` where `target` is one of the IDs above must be rejected.
+Any approved row in `relationships.csv` where `target` resolves to a policy ID must be rejected.
 
 ## Validation Expectation
-Model governance checks should enforce this constraint before approving new edges.
+Model governance checks enforce this constraint at load time (fail-fast on approved policy-target edges).
 
 ## Related Docs
 - `engine/EDGE_POLICY.md`

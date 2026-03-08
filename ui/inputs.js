@@ -6,15 +6,19 @@
 function handlePolicySliderChange(event) {
     const slider = event.target;
     const valueDisplay = document.getElementById('slider-value');
-    
+    const numericValue = Number(slider.value);
+    const valueUnit = slider.dataset.valueUnit || 'percent';
+
     if (valueDisplay) {
-        valueDisplay.textContent = slider.value + '%';
+        valueDisplay.textContent = (typeof formatNodeValueByUnit === 'function')
+            ? formatNodeValueByUnit(numericValue, valueUnit)
+            : String(slider.value);
     }
-    
+
     // Update the policy value in real-time (optional preview)
     const policyId = slider.dataset.policyId;
     if (policyId) {
-        previewPolicyChange(policyId, parseInt(slider.value));
+        previewPolicyChange(policyId, numericValue);
     }
 }
 
@@ -22,21 +26,21 @@ function handlePolicySliderChange(event) {
 function previewPolicyChange(policyId, value) {
     const state = getGameState();
     if (!state) return;
-    
+
     // Store original value for both flat and nested policy ids.
     const originalValue = getPolicyValue(policyId);
     if (originalValue === null || originalValue === undefined) return;
-    
+
     // Temporarily update for preview
     updatePolicyValue(policyId, value);
-    
+
     // Calculate preview effects
     const previewBudget = calculateBudget(state);
     const previewPopulation = calculatePopulationMetrics(state);
-    
+
     // Update preview display
     updatePreviewDisplay(previewBudget, previewPopulation);
-    
+
     // Restore original value
     updatePolicyValue(policyId, originalValue);
 }
@@ -47,15 +51,21 @@ function updatePreviewDisplay(budget, population) {
     const previewExpenditure = document.getElementById('preview-expenditure');
     const previewDeficit = document.getElementById('preview-deficit');
     const previewHappiness = document.getElementById('preview-happiness');
-    
-    if (previewIncome) previewIncome.textContent = `€${budget.income.toLocaleString()}M`;
-    if (previewExpenditure) previewExpenditure.textContent = `€${budget.expenditure.toLocaleString()}M`;
+
+    const roundedIncome = Math.round(budget.income);
+    const roundedExpenditure = Math.round(budget.expenditure);
+    const roundedDeficit = Math.round(budget.deficit);
+
+    if (previewIncome) previewIncome.textContent = `\u20AC${roundedIncome.toLocaleString()}M`;
+    if (previewExpenditure) previewExpenditure.textContent = `\u20AC${roundedExpenditure.toLocaleString()}M`;
     if (previewDeficit) {
-        const deficitText = budget.deficit >= 0 ? `€${budget.deficit.toLocaleString()}M` : `€${Math.abs(budget.deficit).toLocaleString()}M`;
+        const deficitText = budget.deficit >= 0
+            ? `\u20AC${roundedDeficit.toLocaleString()}M`
+            : `\u20AC${Math.abs(roundedDeficit).toLocaleString()}M`;
         previewDeficit.textContent = deficitText;
         previewDeficit.style.color = budget.deficit >= 0 ? 'var(--negative)' : 'var(--positive)';
     }
-    if (previewHappiness) previewHappiness.textContent = `${population.happiness}%`;
+    if (previewHappiness) previewHappiness.textContent = `${Math.round(population.happiness)}%`;
 }
 
 // Handle keyboard shortcuts
@@ -79,7 +89,7 @@ function setupKeyboardShortcuts() {
             }
             return;
         }
-        
+
         // Game shortcuts
         switch(event.key) {
             case 'n':
@@ -163,7 +173,7 @@ function setupFocusManagement() {
 function returnToStartScreen() {
     const startScreen = document.getElementById('start-screen');
     const mainGame = document.getElementById('main-game');
-    
+
     if (startScreen && mainGame) {
         mainGame.style.display = 'none';
         startScreen.style.display = 'flex';
@@ -174,7 +184,7 @@ function returnToStartScreen() {
         if (typeof destroyForceGraph === 'function') {
             destroyForceGraph();
         }
-        
+
         // Reset game state
         if (typeof initializeGameState === 'function') {
             initializeGameState();
@@ -193,7 +203,7 @@ function initializeInputHandlers() {
     if (policySlider) {
         policySlider.addEventListener('input', handlePolicySliderChange);
     }
-    
+
     console.log('Input handlers initialized');
 }
 

@@ -9,13 +9,30 @@ Related contracts:
 - `docs/engine/POLICY_NODE_CONSTRAINTS.md`
 
 ## 1. Design Intent
-Edges are not decorative and are not statistical correlations. Each edge represents a direct real-world causal mechanism that can transmit change from source to target during turn simulation.
+Edges are not decorative and are not statistical correlations. Each edge represents a direct real-world causal mechanism. The graph has two computation modes:
+- Influence edges: weighted/inertial propagation inside the simulation loop.
+- Accounting edges: deterministic arithmetic ownership and traceability links for precision-critical identities.
 
 The model must stay both:
 - Realistic: causal structure matches how the world works.
 - Playable: behavior is stable, interpretable, and responsive.
 
 If realism and playability conflict, realism wins. Non-realistic edges must be removed or explicitly marked for urgent correction.
+
+## 1.1 Edge Computation Modes (Normative)
+### Influence Edges
+Use when target updates are behaviorally modeled (weighted, inertial, bounded). These edges are simulation-active.
+
+### Accounting Edges
+Use when target updates must be exact and are computed by deterministic arithmetic. These edges are governance and traceability links in the graph.
+
+Accounting edge rules:
+- Source of truth is the designated deterministic calculator, not weighted propagation.
+- Signs and directions must still be mechanistically correct.
+- Required accounting edge sets are validated fail-fast at load time.
+- Accounting edges may use stronger display weights for legibility if explicitly documented.
+
+This pattern is reusable beyond budget whenever precision requirements demand deterministic arithmetic.
 
 ## 2. Causal Standard (Hard Requirement)
 An edge is valid only if all are true:
@@ -88,6 +105,30 @@ Low evidence does not bypass the direct-causality requirement.
 - sparsity default for new targets: start with 1 to 3 inbound edges
 - government policy nodes are exogenous player controls: inbound edges to policy nodes are forbidden
 
+## 6.1 Accounting Required Edge Sets (Fail-Fast)
+Accounting sets are mandatory structural contracts. Startup must fail if any required accounting edge is missing or has wrong sign.
+
+### Budget Accounting Set (Current)
+Required approved edges:
+- every policy with fiscal cost (`base_cost != 0` or `cost_slope != 0`) must include `policy_id -> budget.expenditure`
+- every policy with `revenue_channel=tax` must include `policy_id -> tax_revenue`
+- `tax_revenue -> budget.income` with positive sign
+- `budget.income -> budget.deficit` with negative sign
+- `budget.expenditure -> budget.deficit` with positive sign
+- `budget.deficit -> budget.debt` with positive sign
+
+Budget computation authority:
+- deterministic arithmetic in `calculateBudget()` remains source of truth for `budget.income`, `budget.expenditure`, `budget.deficit`, and `budget.debt`.
+- required budget accounting edges are governance and traceability links, not the arithmetic engine.
+
+Identity-chain magnitude exception:
+- `budget.income -> budget.deficit`, `budget.expenditure -> budget.deficit`, and `budget.deficit -> budget.debt` may use `|weight|=0.95`.
+- this exception exists only for these three budget accounting identity links.
+
+Future accounting domains:
+- additional deterministic domains may define their own required accounting edge set with the same fail-fast pattern.
+- each new set must name its deterministic calculator and required sign conventions.
+
 ## 7. Edge Lifecycle
 1. Add or update edge row directly in `engine/relationships.csv` using the extended schema.
 2. Set `status=in_review` while drafting.
@@ -105,7 +146,8 @@ An edge can be approved only if reviewer can answer "yes" to all:
 4. Are sign, weight, and inertia plausible?
 5. Is the target not a player-controlled government policy node?
 6. Is evidence documented and strength rated?
-7. Would this edge still be defensible if shown to a subject-matter expert?
+7. Is the computation mode clear (influence vs accounting) and consistent with runtime ownership?
+8. Would this edge still be defensible if shown to a subject-matter expert?
 
 ## 9. `relationships.csv` Field Contract (Extended Schema)
 - `source`: node id causing effect

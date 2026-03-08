@@ -1,4 +1,4 @@
-﻿// D3 force graph renderer for policy and outcome nodes.
+﻿// D3 force graph renderer for policy and metric nodes.
 // This file contains ONLY visualization/simulation lifecycle logic.
 
 let forceGraphContext = {
@@ -32,50 +32,67 @@ const defaultPhysicsSettings = {
 // Using a fixed domain avoids "strongest link always looks identical" artifacts.
 const LINK_VISUAL_MAGNITUDE_MAX = 4.0;
 
-const OUTCOME_NODE_DISPLAY = {
-    gdp: { name: 'GDP', icon: '\u{1F4C8}', color: 'var(--economy)', unit: 'eur_b' },
-    health: { name: 'Health', icon: '\u2764\uFE0F', color: 'var(--health)', unit: 'percent' },
-    happiness: { name: 'Happiness', icon: '\u{1F60A}', color: 'var(--welfare)', unit: 'percent' },
-    education: { name: 'Education', icon: '\u{1F393}', color: 'var(--education)', unit: 'percent' },
-    safety: { name: 'Safety', icon: '\u{1F6E1}\uFE0F', color: 'var(--law-order)', unit: 'percent' },
-    unemployment_rate: { name: 'Unemployment Rate', icon: '\u{1F465}', color: 'var(--warning)', unit: 'percent_1' },
-    inflation_consumer_prices: { name: 'Inflation, Consumer Prices', icon: '\u{1F4CA}', color: 'var(--neutral)', unit: 'percent_1' },
-    consumption: { name: 'Consumption', icon: '\u{1F6D2}', color: 'var(--economy)', unit: 'percent_1' },
-    investment: { name: 'Investment', icon: '\u{1F3D7}\uFE0F', color: 'var(--economy)', unit: 'percent_1' },
-    govSpending: { name: 'Gov Stimulus', icon: '\u{1F3DB}\uFE0F', color: 'var(--transport)', unit: 'percent_1' },
-    netExports: { name: 'Net Exports', icon: '\u{1F6A2}', color: 'var(--neutral)', unit: 'percent_1' },
-    rentBurden: { name: 'Rent Burden', icon: '\u{1F3D8}\uFE0F', color: 'var(--warning)', unit: 'percent_1' },
-    youthIndependence: { name: 'Youth Indep.', icon: '\u{1F3E1}', color: 'var(--neutral)', unit: 'percent_1' },
-    nominal_minimum_wage: { name: 'Nominal Minimum Wage', icon: '\u{1F4B5}', color: 'var(--economy)', unit: 'eur_int' },
-    average_annual_real_wages: { name: 'Average Real Wages', icon: '\u{1F4B6}', color: 'var(--economy)', unit: 'eur_int' },
-    central_bank_policy_rate: { name: 'Policy Rate', icon: '\u{1F3E6}', color: 'var(--neutral)', unit: 'percent_1' },
-    co2_emissions_per_capita: { name: 'CO2 per Capita', icon: '\u{1F30D}', color: 'var(--health)', unit: 'decimal_2' },
-    air_pollution_pm25: { name: 'Air Pollution PM2.5', icon: '\u{1F32B}\uFE0F', color: 'var(--health)', unit: 'decimal_1' },
-    women_in_parliament: { name: 'Women in Parliament', icon: '\u{1F3DB}\uFE0F', color: 'var(--law-order)', unit: 'percent_1' },
-    fixed_broadband_subscriptions: { name: 'Fixed Broadband', icon: '\u{1F4F6}', color: 'var(--transport)', unit: 'decimal_1' }
+const NODE_ICON_BY_ID = {
+    incomeTax: '\u{1F4B0}',
+    corporateTax: '\u{1F3E2}',
+    vat: '\u{1F9FE}',
+    public_expenditure_on_health: '\u{1F3E5}',
+    public_expenditure_on_education: '\u{1F393}',
+    welfareSpending: '\u{1F91D}',
+    transportSpending: '\u{1F686}',
+    digitalInfrastructure: '\u{1F4BB}',
+    policeSpending: '\u{1F46E}',
+    justiceSpending: '\u2696\uFE0F',
+    greenEnergy: '\u{1F331}',
+    carbonTax: '\u{1F3ED}',
+    'housingPolicy.maisHabitacao': '\u{1F3E0}',
+    'housingPolicy.goldenVisa': '\u{1F4DC}',
+    'housingPolicy.alTaxes': '\u{1F4BC}',
+    'housingPolicy.rentControl': '\u{1F3D8}\uFE0F',
+    nominal_minimum_wage: '\u{1F4B5}',
+    'laborPolicy.fourDayWeek': '\u{1F4C6}',
+    'laborPolicy.youthJobs': '\u{1F9D1}\u200D\u{1F4BC}',
+    'taxPolicy.nhrRegime': '\u{1F3D8}\uFE0F',
+    'taxPolicy.wealthTax': '\u{1F48E}',
+    military_expenditure: '\u{1F6E1}\uFE0F',
+    gdp: '\u{1F4C8}',
+    health: '\u2764\uFE0F',
+    happiness: '\u{1F60A}',
+    education: '\u{1F393}',
+    safety: '\u{1F6E1}\uFE0F',
+    unemployment_rate: '\u{1F465}',
+    inflation_consumer_prices: '\u{1F4CA}',
+    consumption: '\u{1F6D2}',
+    investment: '\u{1F3D7}\uFE0F',
+    netExports: '\u{1F6A2}',
+    rentBurden: '\u{1F3D8}\uFE0F',
+    youthIndependence: '\u{1F3E1}',
+    average_annual_real_wages: '\u{1F4B6}',
+    central_bank_policy_rate: '\u{1F3E6}',
+    co2_emissions_per_capita: '\u{1F30D}',
+    air_pollution_pm25: '\u{1F32B}\uFE0F',
+    women_in_parliament: '\u{1F3DB}\uFE0F',
+    fixed_broadband_subscriptions: '\u{1F4F6}',
+    approval: '\u{1F5F3}\uFE0F',
+    stability: '\u2696\uFE0F',
+    corruption: '\u{1F575}\uFE0F',
+    debt_to_gdp: '\u{1F9EE}',
+    'budget.income': '\u{1F4B8}',
+    'budget.expenditure': '\u{1F4B3}',
+    'budget.deficit': '\u26A0\uFE0F',
+    'budget.debt': '\u{1F4C9}',
+    'population.total': '\u{1F465}'
 };
 
-function getOutcomeNodeStateValue(state, nodeId) {
-    if (state?.economy && typeof state.economy[nodeId] === 'number') return state.economy[nodeId];
-    if (state?.population && typeof state.population[nodeId] === 'number') return state.population[nodeId];
-    if (state?.politics && typeof state.politics[nodeId] === 'number') return state.politics[nodeId];
-    return null;
-}
-
-function humanizeOutcomeId(nodeId) {
-    return String(nodeId || '')
-        .replace(/([a-z])([A-Z])/g, '$1 $2')
-        .replace(/_/g, ' ')
-        .replace(/\b\w/g, (m) => m.toUpperCase());
-}
-
-function formatOutcomeValueByUnit(value, unit) {
+function formatMetricValueByUnit(value, unit) {
     if (!Number.isFinite(value)) return 'n/a';
     switch (unit) {
         case 'eur_b':
             return `€${(value / 1000).toFixed(1)}B`;
         case 'eur_int':
             return `€${Math.round(value).toLocaleString()}`;
+        case 'int':
+            return `${Math.round(value).toLocaleString()}`;
         case 'percent':
             return `${Math.round(value)}%`;
         case 'percent_1':
@@ -89,62 +106,47 @@ function formatOutcomeValueByUnit(value, unit) {
     }
 }
 
-function getOutcomeGraphNodes(state) {
-    const nodeIds = Object.keys(state?.simulation?.nodes || {});
-    return nodeIds
-        .map((id) => {
-            const rawValue = getOutcomeNodeStateValue(state, id);
+function getRegistryGraphRows() {
+    if (typeof getGraphNodeRegistryRows !== 'function') return [];
+    return getGraphNodeRegistryRows();
+}
+
+function getNodeStateNumericValue(state, nodeId) {
+    if (typeof getStateValueByNodeId === 'function') {
+        return getStateValueByNodeId(state, nodeId);
+    }
+    return null;
+}
+
+function resolveNodeIcon(row) {
+    if (!row) return '\u{1F4CA}';
+    if (NODE_ICON_BY_ID[row.nodeId]) return NODE_ICON_BY_ID[row.nodeId];
+    const rawIcon = String(row.icon || '').trim();
+    if (rawIcon && !/^\?+$/.test(rawIcon)) return rawIcon;
+    return row.nodeType === 'policy' ? '\u2699\uFE0F' : '\u{1F4CA}';
+}
+
+function buildGraphNodes(state) {
+    return getRegistryGraphRows()
+        .map((row) => {
+            const rawValue = getNodeStateNumericValue(state, row.nodeId);
             if (!Number.isFinite(rawValue)) return null;
-            const display = OUTCOME_NODE_DISPLAY[id] || {};
-            const unit = display.unit || 'decimal_1';
+            const formattedValue = formatMetricValueByUnit(rawValue, row.valueUnit);
             return {
-                id,
-                name: display.name || humanizeOutcomeId(id),
-                icon: display.icon || '\u{1F4CA}',
-                value: formatOutcomeValueByUnit(rawValue, unit),
-                color: display.color || 'var(--neutral)',
-                nodeType: 'outcome'
+                id: row.nodeId,
+                name: row.shortLabel || row.displayName || row.nodeId,
+                icon: resolveNodeIcon(row),
+                value: formattedValue,
+                color: row.colorToken || 'var(--neutral)',
+                nodeType: row.nodeType,
+                description: row.description || ''
             };
         })
         .filter(Boolean);
 }
 
-function getPolicyGraphNodes() {
-    return [
-        { id: 'incomeTax', name: 'Income Tax', icon: '\u{1F4B0}', color: 'var(--economy)', nodeType: 'policy' },
-        { id: 'corporateTax', name: 'Corporate Tax', icon: '\u{1F3E2}', color: 'var(--economy)', nodeType: 'policy' },
-        { id: 'vat', name: 'VAT', icon: '\u{1F9FE}', color: 'var(--economy)', nodeType: 'policy' },
-        { id: 'healthcareSpending', name: 'Healthcare', icon: '\u{1F3E5}', color: 'var(--welfare)', nodeType: 'policy' },
-        { id: 'educationSpending', name: 'Education', icon: '\u{1F393}', color: 'var(--welfare)', nodeType: 'policy' },
-        { id: 'welfareSpending', name: 'Welfare', icon: '\u{1F91D}', color: 'var(--welfare)', nodeType: 'policy' },
-        { id: 'transportSpending', name: 'Transport', icon: '\u{1F686}', color: 'var(--transport)', nodeType: 'policy' },
-        { id: 'digitalInfrastructure', name: 'Digital', icon: '\u{1F4BB}', color: 'var(--transport)', nodeType: 'policy' },
-        { id: 'policeSpending', name: 'Police', icon: '\u{1F46E}', color: 'var(--law-order)', nodeType: 'policy' },
-        { id: 'justiceSpending', name: 'Justice', icon: '\u2696\uFE0F', color: 'var(--law-order)', nodeType: 'policy' },
-        { id: 'greenEnergy', name: 'Green Energy', icon: '\u{1F331}', color: 'var(--health)', nodeType: 'policy' },
-        { id: 'carbonTax', name: 'Carbon Tax', icon: '\u{1F3ED}', color: 'var(--health)', nodeType: 'policy' },
-        { id: 'housingPolicy.maisHabitacao', name: 'Mais Habitacao', icon: '\u{1F3E0}', color: 'var(--warning)', nodeType: 'policy' },
-        { id: 'housingPolicy.goldenVisa', name: 'Golden Visa', icon: '\u{1F4DC}', color: 'var(--warning)', nodeType: 'policy' },
-        { id: 'housingPolicy.alTaxes', name: 'AL Taxes', icon: '\u{1F4BC}', color: 'var(--warning)', nodeType: 'policy' },
-        { id: 'housingPolicy.rentControl', name: 'Rent Control', icon: '\u{1F3D8}\uFE0F', color: 'var(--warning)', nodeType: 'policy' },
-        { id: 'laborPolicy.minimumWage', name: 'Minimum Wage', icon: '\u{1F4B5}', color: 'var(--neutral)', nodeType: 'policy' },
-        { id: 'laborPolicy.fourDayWeek', name: '4-Day Week', icon: '\u{1F4C6}', color: 'var(--neutral)', nodeType: 'policy' },
-        { id: 'laborPolicy.youthJobs', name: 'Youth Jobs', icon: '\u{1F9D1}\u200D\u{1F4BC}', color: 'var(--neutral)', nodeType: 'policy' },
-        { id: 'taxPolicy.nhrRegime', name: 'NHR Regime', icon: '\u{1F3D8}\uFE0F', color: 'var(--economy)', nodeType: 'policy' },
-        { id: 'taxPolicy.wealthTax', name: 'Wealth Tax', icon: '\u{1F48E}', color: 'var(--economy)', nodeType: 'policy' }
-    ];
-}
-
-function buildGraphNodes(state) {
-    const policyNodes = getPolicyGraphNodes().map((node) => ({
-        ...node,
-        value: `${getPolicyValue(node.id) ?? 0}%`
-    }));
-    return [...getOutcomeGraphNodes(state), ...policyNodes];
-}
-
 function getNodeRadius(node) {
-    return node.visualRadius || (node.nodeType === 'outcome' ? 36 : 42);
+    return node.visualRadius || (node.nodeType === 'metric' ? 36 : 42);
 }
 
 function initializeForceGraph(containerEl) {
@@ -520,13 +522,16 @@ function renderForceGraph(state) {
         .join((enter) => {
             const group = enter
                 .append('g')
-                .attr('class', (d) => `force-node ${d.nodeType === 'policy' ? 'policy-force-node' : 'outcome-force-node'}`)
+                .attr('class', (d) => `force-node ${d.nodeType === 'policy' ? 'policy-force-node' : 'metric-force-node'}`)
                 .style('cursor', 'pointer');
 
+            group.append('circle').attr('class', 'force-node-ring');
             group.append('circle').attr('class', 'force-node-circle');
             group.append('text').attr('class', 'force-node-icon');
             group.append('text').attr('class', 'force-node-label');
             group.append('text').attr('class', 'force-node-value');
+            group.append('circle').attr('class', 'force-node-type-badge-bg');
+            group.append('text').attr('class', 'force-node-type-badge-label');
 
             return group;
         });
@@ -535,8 +540,8 @@ function renderForceGraph(state) {
         .call(dragBehavior)
         .on('pointerenter', function(event, d) {
             if (typeof hideTooltip === 'function') hideTooltip();
-            if (d.nodeType === 'outcome' && typeof showOutcomeTooltip === 'function') {
-                showOutcomeTooltip(event, d, forceGraphContext.currentState);
+            if (d.nodeType === 'metric' && typeof showMetricTooltip === 'function') {
+                showMetricTooltip(event, d, forceGraphContext.currentState);
             } else if (d.nodeType === 'policy' && typeof showPolicyTooltip === 'function') {
                 showPolicyTooltip(event, d, forceGraphContext.currentState);
             }
@@ -560,17 +565,25 @@ function renderForceGraph(state) {
             }
         });
 
+    forceGraphContext.nodeSelection.select('circle.force-node-ring')
+        .attr('r', (d) => getNodeRadius(d) + (d.nodeType === 'policy' ? 6 : 3))
+        .attr('fill', 'none')
+        .attr('stroke', (d) => d.color)
+        .attr('stroke-width', (d) => (d.nodeType === 'policy' ? 2.6 : 1.6))
+        .attr('stroke-opacity', (d) => (d.nodeType === 'policy' ? 0.9 : 0.48))
+        .attr('stroke-dasharray', (d) => (d.nodeType === 'policy' ? '6 4' : null));
+
     forceGraphContext.nodeSelection.select('circle.force-node-circle')
         .attr('r', (d) => getNodeRadius(d))
-        .attr('fill', '#2d2d2d')
+        .attr('fill', (d) => (d.nodeType === 'policy' ? '#352820' : '#1f2937'))
         .attr('stroke', (d) => d.color)
-        .attr('stroke-width', (d) => (d.nodeType === 'outcome' ? 2 : 3));
+        .attr('stroke-width', (d) => (d.nodeType === 'metric' ? 2 : 3.6));
 
     forceGraphContext.nodeSelection.select('text.force-node-icon')
         .attr('text-anchor', 'middle')
         .attr('dominant-baseline', 'middle')
         .attr('y', -14)
-        .attr('font-size', (d) => (d.nodeType === 'outcome' ? '16px' : '19px'))
+        .attr('font-size', (d) => (d.nodeType === 'metric' ? '16px' : '19px'))
         .text((d) => d.icon);
 
     forceGraphContext.nodeSelection.select('text.force-node-label')
@@ -587,6 +600,23 @@ function renderForceGraph(state) {
         .attr('font-size', '9px')
         .attr('fill', '#cccccc')
         .text((d) => d.value);
+
+    forceGraphContext.nodeSelection.select('circle.force-node-type-badge-bg')
+        .attr('r', 9)
+        .attr('cx', (d) => getNodeRadius(d) - 9)
+        .attr('cy', (d) => -getNodeRadius(d) + 9)
+        .attr('fill', (d) => (d.nodeType === 'policy' ? '#f59e0b' : '#60a5fa'))
+        .attr('stroke', '#0b0f17')
+        .attr('stroke-width', 1.4);
+
+    forceGraphContext.nodeSelection.select('text.force-node-type-badge-label')
+        .attr('x', (d) => getNodeRadius(d) - 9)
+        .attr('y', (d) => -getNodeRadius(d) + 12)
+        .attr('text-anchor', 'middle')
+        .attr('font-size', '9px')
+        .attr('font-weight', '800')
+        .attr('fill', '#0b0f17')
+        .text((d) => (d.nodeType === 'policy' ? 'P' : 'M'));
 
     applySimulationForces(nodes, links, width, height, maxMagnitude);
     if (isTopologyChanged || previousNodes.size === 0) {
@@ -621,6 +651,7 @@ function destroyForceGraph() {
         lastTopologySignature: ''
     };
 }
+
 
 
 

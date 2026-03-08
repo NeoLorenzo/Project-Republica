@@ -9,15 +9,18 @@ Execution order:
    - call `stepRelationshipSimulation(state)` from `engine/rules.js`
    - applies edge impacts, computes targets, applies inertia, syncs to state
 3. Budget recomputation:
-   - `calculateBudget(state)`
-4. Political metric recomputation:
+   - `calculateBudget(state)` (deterministic arithmetic authority for budget nodes)
+4. Derived deterministic metric recomputation:
+   - `recomputeDerivedEconomyMetrics(state)` (currently computes `debt_to_gdp`)
+5. Political metric recomputation:
    - `calculatePoliticalMetrics(state)`
-5. Turn advancement:
+6. Turn advancement:
    - increment month/year counters
-6. Reset action points.
+7. Reset action points.
 
 ## Why Order Matters
-- Relationship simulation must run before budget/politics so derived metrics use latest state.
+- Relationship simulation must run before budget/politics so downstream arithmetic uses latest state.
+- Budget arithmetic must run before derived deterministic metrics (for example `debt_to_gdp`).
 - Reordering changes outputs and invalidates calibration baselines.
 
 ## Reproducibility Guarantees

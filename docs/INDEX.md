@@ -17,6 +17,8 @@ This repository uses decentralized documentation. `README.md` is the front door;
 - `docs/engine/NODE_MODEL.md`
 - `docs/engine/RELATIONSHIP_REGISTRY_SPEC.md`
 - `docs/operations/VALIDATION_RUNBOOK.md`
+- `engine/policies.csv`
+- `engine/metrics.csv`
 
 ### Data / Calibration Maintainer
 - `engine/CALIBRATION_GUIDE.md`
@@ -38,6 +40,8 @@ This repository uses decentralized documentation. `README.md` is the front door;
 - `docs/contributing/DOC_STANDARDS.md`
 - `engine/EDGE_POLICY.md` (authoritative policy)
 - `engine/CALIBRATION_GUIDE.md` (authoritative calibration strategy)
+- `engine/policies.csv` (authoritative policy registry)
+- `engine/metrics.csv` (authoritative metric registry)
 
 ## Documentation Completeness Checklist
 - [ ] README links to docs index and does not duplicate deep specs

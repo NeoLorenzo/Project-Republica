@@ -192,12 +192,38 @@ body {
     transition: filter 0.2s ease, stroke-width 0.2s ease;
 }
 
+.force-node-ring {
+    transition: stroke-opacity 0.2s ease, stroke-width 0.2s ease;
+}
+
+.force-node-type-badge-bg {
+    transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.force-node-type-badge-label {
+    pointer-events: none;
+    user-select: none;
+}
+
 .force-node:hover .force-node-circle {
     filter: brightness(1.2);
 }
 
-/* Outcome Nodes - Smaller, distinct styling in center */
-.outcome-node {
+.policy-force-node:hover .force-node-ring {
+    stroke-opacity: 1;
+}
+
+.metric-force-node:hover .force-node-ring {
+    stroke-opacity: 0.75;
+}
+
+.policy-force-node:hover .force-node-type-badge-bg,
+.metric-force-node:hover .force-node-type-badge-bg {
+    filter: brightness(1.12);
+}
+
+/* Metric Nodes - Smaller, distinct styling in center */
+.metric-node {
     position: absolute;
     width: 70px;
     height: 70px;
@@ -216,23 +242,23 @@ body {
     z-index: 10;
 }
 
-.outcome-node:hover {
+.metric-node:hover {
     transform: scale(1.1);
     box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
 }
 
-.outcome-icon {
+.metric-icon {
     font-size: 1rem;
     margin-bottom: 0.1rem;
 }
 
-.outcome-value {
+.metric-value {
     font-weight: bold;
     font-size: 0.6rem;
     color: var(--text-primary);
 }
 
-.outcome-label {
+.metric-label {
     font-size: 0.5rem;
     color: var(--text-secondary);
     margin-top: 0.1rem;
@@ -575,7 +601,7 @@ body {
     max-width: 200px;
 }
 
-.outcome-tooltip {
+.metric-tooltip {
     border-color: var(--economy);
 }
 

@@ -18,27 +18,69 @@ function renderGameUI() {
     }
 }
 
+function getNodeNumber(state, nodeId, fallback = 0) {
+    if (typeof getStateValueByNodeId === 'function') {
+        const value = getStateValueByNodeId(state, nodeId);
+        if (Number.isFinite(value)) return value;
+    }
+    return Number.isFinite(fallback) ? fallback : 0;
+}
+
+function formatNodeValueByUnit(value, unit) {
+    if (typeof formatMetricValueByUnit === 'function') {
+        return formatMetricValueByUnit(value, unit);
+    }
+    if (!Number.isFinite(value)) return 'n/a';
+    return String(value);
+}
+
+function getPolicySliderStep(unit) {
+    switch (unit) {
+        case 'percent_1':
+        case 'decimal_1':
+            return '0.1';
+        case 'decimal_2':
+            return '0.01';
+        case 'eur_int':
+            return '10';
+        case 'int':
+            return '1000';
+        default:
+            return '1';
+    }
+}
+
 function updateTopBar(state) {
     const income = document.getElementById('income');
     const expenditure = document.getElementById('expenditure');
     const deficit = document.getElementById('deficit');
     const debt = document.getElementById('debt');
 
-    if (income) income.textContent = `Income: \u20AC${state.budget.income.toLocaleString()}M`;
-    if (expenditure) expenditure.textContent = `Expenditure: \u20AC${state.budget.expenditure.toLocaleString()}M`;
+    const incomeValue = getNodeNumber(state, 'budget.income', state?.budget?.income);
+    const expenditureValue = getNodeNumber(state, 'budget.expenditure', state?.budget?.expenditure);
+    const deficitValue = getNodeNumber(state, 'budget.deficit', state?.budget?.deficit);
+    const debtValue = getNodeNumber(state, 'budget.debt', state?.budget?.debt);
+
+    const roundedIncome = Math.round(incomeValue);
+    const roundedExpenditure = Math.round(expenditureValue);
+    const roundedDeficit = Math.round(deficitValue);
+    const roundedDebt = Math.round(debtValue);
+
+    if (income) income.textContent = `Income: \u20AC${roundedIncome.toLocaleString()}M`;
+    if (expenditure) expenditure.textContent = `Expenditure: \u20AC${roundedExpenditure.toLocaleString()}M`;
     if (deficit) {
-        const deficitText = state.budget.deficit >= 0
-            ? `Deficit: \u20AC${state.budget.deficit.toLocaleString()}M`
-            : `Surplus: \u20AC${Math.abs(state.budget.deficit).toLocaleString()}M`;
+        const deficitText = deficitValue >= 0
+            ? `Deficit: \u20AC${roundedDeficit.toLocaleString()}M`
+            : `Surplus: \u20AC${Math.abs(roundedDeficit).toLocaleString()}M`;
         deficit.textContent = deficitText;
-        deficit.style.color = state.budget.deficit >= 0 ? 'var(--negative)' : 'var(--positive)';
+        deficit.style.color = deficitValue >= 0 ? 'var(--negative)' : 'var(--positive)';
     }
-    if (debt) debt.textContent = `Debt: \u20AC${state.budget.debt.toLocaleString()}M`;
+    if (debt) debt.textContent = `Debt: \u20AC${roundedDebt.toLocaleString()}M`;
 
     const approval = document.getElementById('approval');
     const stability = document.getElementById('stability');
-    if (approval) approval.textContent = `Approval: ${state.politics.approval}%`;
-    if (stability) stability.textContent = `Stability: ${state.politics.stability}%`;
+    if (approval) approval.textContent = `Approval: ${Math.round(state.politics.approval)}%`;
+    if (stability) stability.textContent = `Stability: ${Math.round(state.politics.stability)}%`;
 }
 
 function updateTurnCounter(state) {
@@ -72,12 +114,12 @@ function renderPolicyNodes(state) {
     }
 }
 
-function showOutcomeTooltip(event, node, state) {
+function showMetricTooltip(event, node, state) {
     hideTooltip();
 
     const tooltip = document.createElement('div');
-    tooltip.id = 'outcome-tooltip';
-    tooltip.className = 'tooltip outcome-tooltip';
+    tooltip.id = 'metric-tooltip';
+    tooltip.className = 'tooltip metric-tooltip';
 
     let details = '';
     switch (node.id) {
@@ -90,8 +132,11 @@ function showOutcomeTooltip(event, node, state) {
         case 'happiness':
             details = `Youth Independence: ${state.population.youthIndependence}%`;
             break;
-        case 'debt':
-            details = `Debt-to-GDP: ${((state.economy.debt / state.economy.gdp) * 100).toFixed(1)}%`;
+        case 'budget.debt':
+            details = `Debt-to-GDP: ${getNodeNumber(state, 'debt_to_gdp', state?.economy?.debt_to_gdp).toFixed(1)}%`;
+            break;
+        case 'debt_to_gdp':
+            details = 'Derived from debt and GDP';
             break;
         case 'education':
             details = `Teacher Strikes: ${(state.currentEvents.educationStrikes.severity * 100).toFixed(0)}%`;
@@ -111,9 +156,6 @@ function showOutcomeTooltip(event, node, state) {
         case 'investment':
             details = 'Business and capital formation climate';
             break;
-        case 'govSpending':
-            details = 'Perceived public-project stimulus';
-            break;
         case 'netExports':
             details = 'Trade balance competitiveness channel';
             break;
@@ -125,10 +167,15 @@ function showOutcomeTooltip(event, node, state) {
             break;
     }
 
+    const registryRow = typeof getNodeRegistryRowById === 'function'
+        ? getNodeRegistryRowById(node.id)
+        : null;
+    const detailText = details || registryRow?.description || 'Simulation metric';
+
     tooltip.innerHTML = `
         <strong>${node.name}</strong><br>
         Current: ${node.value}<br>
-        <small>${details}</small>
+        <small>${detailText}</small>
     `;
 
     tooltip.style.position = 'absolute';
@@ -150,12 +197,16 @@ function showPolicyTooltip(event, policy) {
     hideTooltip();
 
     const currentValue = getPolicyValue(policy.id);
+    const registryRow = typeof getNodeRegistryRowById === 'function'
+        ? getNodeRegistryRowById(policy.id)
+        : null;
+    const formattedValue = formatNodeValueByUnit(currentValue, registryRow?.valueUnit || 'percent');
     const tooltip = document.createElement('div');
     tooltip.id = 'policy-tooltip';
     tooltip.className = 'tooltip policy-tooltip';
     tooltip.innerHTML = `
         <strong>${policy.name}</strong><br>
-        Current: ${currentValue ?? 'N/A'}%<br>
+        Current: ${formattedValue}<br>
         <small>Click to adjust</small>
     `;
 
@@ -175,7 +226,7 @@ function showPolicyTooltip(event, policy) {
 }
 
 function updateTooltipPosition(event) {
-    const activeTooltip = document.getElementById('outcome-tooltip') || document.getElementById('policy-tooltip');
+    const activeTooltip = document.getElementById('metric-tooltip') || document.getElementById('policy-tooltip');
     if (!activeTooltip) return;
     activeTooltip.style.left = `${event.pageX + 10}px`;
     activeTooltip.style.top = `${event.pageY - 30}px`;
@@ -278,7 +329,7 @@ function renderBudgetPieChart(containerId, legendId, breakdown) {
             tooltip.className = 'tooltip';
             tooltip.innerHTML = `
                 <strong>${d.data.label}</strong><br>
-                \u20AC${d.data.value.toLocaleString()}M<br>
+                \u20AC${Math.round(d.data.value).toLocaleString()}M<br>
                 ${d.data.percent.toFixed(1)}%
             `;
             tooltip.style.left = `${event.pageX + 10}px`;
@@ -314,7 +365,7 @@ function renderBudgetPieChart(containerId, legendId, breakdown) {
         .attr('fill', 'var(--text-primary)')
         .attr('font-size', '13px')
         .attr('font-weight', '700')
-        .text(`\u20AC${total.toLocaleString()}M`);
+        .text(`\u20AC${Math.round(total).toLocaleString()}M`);
 
     slices.forEach((slice) => {
         const item = document.createElement('div');
@@ -323,7 +374,7 @@ function renderBudgetPieChart(containerId, legendId, breakdown) {
         item.innerHTML = `
             <span class="legend-color" style="background:${getBudgetChartPaletteColor(slice.policyId)}"></span>
             <span class="legend-label">${slice.label}</span>
-            <span class="legend-value">\u20AC${slice.value.toLocaleString()}M</span>
+            <span class="legend-value">\u20AC${Math.round(slice.value).toLocaleString()}M</span>
             <span class="legend-percent">${slice.percent.toFixed(1)}%</span>
         `;
         item.addEventListener('mouseenter', () => setLinkedHoverState(sliceIndex));
@@ -353,41 +404,26 @@ function openPolicyModal(policy, state) {
     if (!modal || !modalTitle || !modalDescription || !slider || !sliderValue) return;
 
     const policyValue = getPolicyValue(policy.id);
+    const registryRow = typeof getNodeRegistryRowById === 'function'
+        ? getNodeRegistryRowById(policy.id)
+        : null;
+    const unit = registryRow?.valueUnit || 'percent';
+    const minValue = Number.isFinite(registryRow?.min) ? registryRow.min : 0;
+    const maxValue = Number.isFinite(registryRow?.max) ? registryRow.max : 100;
+    const resolvedValue = Number.isFinite(policyValue)
+        ? policyValue
+        : (Number.isFinite(registryRow?.initialValue) ? Number(registryRow.initialValue) : minValue);
     modalTitle.textContent = policy.name;
     modalTitle.dataset.policyId = policy.id;
-    modalDescription.textContent = getPolicyDescription(policy.id);
-    slider.value = policyValue ?? 0;
+    modalDescription.textContent = registryRow?.description || 'Policy description not available.';
+    slider.min = String(minValue);
+    slider.max = String(maxValue);
+    slider.step = getPolicySliderStep(unit);
+    slider.value = String(resolvedValue);
+    slider.dataset.valueUnit = unit;
     slider.dataset.policyId = policy.id;
-    sliderValue.textContent = `${policyValue ?? 0}%`;
+    sliderValue.textContent = formatNodeValueByUnit(resolvedValue, unit);
     modal.style.display = 'flex';
-}
-
-function getPolicyDescription(policyId) {
-    const descriptions = {
-        incomeTax: 'Adjust the income tax rate. Higher rates increase revenue but may reduce growth.',
-        corporateTax: 'Set the corporate tax rate. Influences investment and expansion.',
-        vat: 'Value-added tax on goods and services. Affects revenue and cost of living.',
-        healthcareSpending: 'Public healthcare funding. Affects health outcomes and social stability.',
-        educationSpending: 'Educational investment. Impacts long-term productivity.',
-        welfareSpending: 'Social welfare support. Affects happiness and resilience.',
-        transportSpending: 'Transport infrastructure spending. Improves economic throughput.',
-        digitalInfrastructure: 'Digital infrastructure investment. Supports productivity.',
-        policeSpending: 'Law enforcement funding. Affects safety and order.',
-        justiceSpending: 'Judicial system investment. Supports social stability.',
-        greenEnergy: 'Renewable energy investment. Improves long-term sustainability.',
-        carbonTax: 'Carbon taxation policy with environmental and economic tradeoffs.',
-        'housingPolicy.maisHabitacao': 'More Housing program intensity to increase supply.',
-        'housingPolicy.goldenVisa': 'Golden visa policy intensity impacting foreign demand.',
-        'housingPolicy.alTaxes': 'Local accommodation tax intensity for short-term rentals.',
-        'housingPolicy.rentControl': 'Rent control intensity to cap rent escalation and protect affordability.',
-        'laborPolicy.minimumWage': 'Minimum wage policy intensity.',
-        'laborPolicy.fourDayWeek': '4-day workweek trial intensity.',
-        'laborPolicy.youthJobs': 'Youth employment program intensity.',
-        'taxPolicy.nhrRegime': 'NHR regime policy intensity.',
-        'taxPolicy.wealthTax': 'Wealth taxation policy intensity.'
-    };
-
-    return descriptions[policyId] || 'Policy description not available.';
 }
 
 function renderGameOver(gameStatus, score) {

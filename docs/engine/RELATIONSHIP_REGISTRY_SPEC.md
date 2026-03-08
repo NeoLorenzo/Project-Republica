@@ -16,6 +16,12 @@ source,target,sign,weight,inertia,target_class,causal_mechanism,evidence_source,
 Runtime inclusion rule:
 - only `status=approved` rows are loaded into simulation.
 
+## Computation Semantics (Hybrid)
+- Influence edges: weighted/inertial propagation used by the simulation loop.
+- Accounting edges: structural/governance links for deterministic arithmetic domains.
+- Accounting edges are still validated for sign/direction and required-set completeness.
+- Budget accounting values remain arithmetic source-of-truth in `calculateBudget()`; required budget edges are governance/traceability constraints.
+
 ## Legacy Compatibility
 Parser also accepts legacy 4-column CSV:
 ```text
@@ -36,8 +42,23 @@ Legacy rows are treated as implicitly approved.
 - no duplicate `source,target`
 - no self-links
 - source and target must be known node IDs
-- accounting blocklist targets are forbidden
+- legacy non-node accounting targets are forbidden (`income`, `expenditure`, `deficit`, `debt`)
+- approved rows may not target policy nodes (policies are exogenous)
 - if extended CSV contains zero approved rows, load fails
+- required budget accounting edge set must be complete and sign-correct (see below)
+
+## Required Budget Accounting Edges (Fail-Fast)
+Runtime validates these edges during `loadRelationshipsCsv()` and blocks startup if missing or wrong-sign:
+- for each fiscal-cost policy row in `policies.csv` (`base_cost != 0` or `cost_slope != 0`): `policy_id -> budget.expenditure` (positive)
+- for each tax policy row in `policies.csv` (`revenue_channel=tax`): `policy_id -> tax_revenue` (positive)
+- `tax_revenue -> budget.income` (positive)
+- `budget.income -> budget.deficit` (negative)
+- `budget.expenditure -> budget.deficit` (positive)
+- `budget.deficit -> budget.debt` (positive)
+
+Notes:
+- This required set is enforced regardless of other optional edges.
+- Additional deterministic domains can adopt the same required-set + fail-fast pattern.
 
 ## Runtime Failure Modes
 Load should fail with actionable errors for:

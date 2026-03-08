@@ -2,7 +2,7 @@
 
 ## Module Boundaries
 - `engine/state.js`: baseline state values, policy storage, initialization
-- `engine/rules.js`: relationship parsing, simulation math, budget/political helper math
+- `engine/rules.js`: node/relationship registry parsing, simulation math, budget/political helper math
 - `engine/gameLoop.js`: turn orchestration (`processNextTurn`)
 - `ui/render.js`: DOM rendering
 - `ui/inputs.js`: user input wiring
@@ -10,21 +10,30 @@
 - `main.js`: app initialization and start/turn event flow
 
 ## Turn Data Flow
-1. Application loads state (`initializeGameState`).
-2. Relationship registry loads (`loadRelationshipsCsv`).
-3. On turn:
+1. Policy registry loads (`loadPoliciesCsv`).
+2. Metric registry loads (`loadMetricsCsv`).
+3. Application loads state (`initializeGameState`).
+4. Relationship registry loads (`loadRelationshipsCsv`).
+5. On turn:
    - relationship simulation step executes (`stepRelationshipSimulation`)
    - budget recalculates (`calculateBudget`)
+   - derived deterministic metrics recalculate (`recomputeDerivedEconomyMetrics`)
    - political metrics recalculate (`calculatePoliticalMetrics`)
    - turn date advances and action points reset
-4. UI re-renders current state.
+6. UI re-renders current state.
+
+## Computation Model
+- Influence model: approved relationship edges drive simulation-enabled metric updates with weight + inertia.
+- Deterministic accounting model: precision-critical accounting nodes are calculated by arithmetic helpers, with required edge sets enforced for structural governance.
+- Budget currently uses deterministic arithmetic authority (`calculateBudget`) with fail-fast required-edge validation.
 
 ## Source-of-Truth Ownership
+- Policy identity/mutability/bounds/initial values/fiscal coefficients: `engine/policies.csv`
+- Metric identity/bounds/initial values/simulation defaults/UI metadata: `engine/metrics.csv`
 - Relationship network and governance status: `engine/relationships.csv`
 - Edge admissibility rules: `engine/EDGE_POLICY.md`
 - Calibration targets and mapping contract: `engine/calibration_targets_template.csv`
 - Calibration process strategy: `engine/CALIBRATION_GUIDE.md`
-- Historical pre-migration intake data: `engine/archive/edge_intake_legacy.csv`
 
 ## Determinism Expectations
 - No-policy runs should be deterministic given fixed files and code.

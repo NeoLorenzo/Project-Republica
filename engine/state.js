@@ -14,31 +14,22 @@ const portugalState = {
         gini_coefficient: 30.9,
         co2_emissions_per_capita: 3.9,
         labor_force_participation_rate: 58.6,
-        central_government_debt: 94.9,
+        debt_to_gdp: 98.9,
         tax_revenue: 35.2,
         renewable_energy_consumption: 34.8,
         foreign_direct_investment_net: 3.2,
-        military_expenditure: 1.3,
         arable_land: 11.0,
         forest_area: 36.0,
         central_bank_policy_rate: 4.5,
-        nominal_minimum_wage: 820.0,
         trade_union_density_rate: 15.3,
         average_annual_real_wages: 19000.0,
         youth_unemployment_rate: 21.2,
-        public_expenditure_on_health: 6.5,
-        public_expenditure_on_education: 5.0,
         air_pollution_pm25: 8.5,
 
         // Existing aggregate-demand channels
         consumption: 65, // aggregate demand component (0-100)
         investment: 50, // aggregate demand component (0-100)
-        govSpending: 55, // behavioral stimulus perception (0-100)
-        netExports: 45, // aggregate demand component (0-100)
-
-        // Existing stock/flow fiscal values (EUR million)
-        debt: 264000, // million euros (99% of GDP - actual debt ratio)
-        deficit: 12000 // million euros (projected 2024 deficit)
+        netExports: 45 // aggregate demand component (0-100)
     },
 
     // Budget
@@ -131,8 +122,8 @@ const portugalState = {
         vat: 23, // Standard VAT rate
 
         // Social policies
-        healthcareSpending: 55, // Strained but trying to maintain
-        educationSpending: 50, // Under pressure from strikes
+        public_expenditure_on_health: 6.5, // % of GDP
+        public_expenditure_on_education: 5.0, // % of GDP
         welfareSpending: 48, // Increased due to housing crisis
 
         // Infrastructure
@@ -146,6 +137,7 @@ const portugalState = {
         // Environmental
         greenEnergy: 38, // Gradual transition
         carbonTax: 18, // Moderate carbon pricing
+        military_expenditure: 1.3, // % of GDP
 
         // Portugal-specific policies (new for Phase 7)
         housingPolicy: {
@@ -154,52 +146,14 @@ const portugalState = {
             alTaxes: 40, // Local accommodation taxes
             rentControl: 30 // Rent control measures
         },
+        nominal_minimum_wage: 820, // Monthly legal minimum wage (EUR)
         laborPolicy: {
-            minimumWage: 45, // Minimum wage adjustments
             fourDayWeek: 20, // 4-day workweek trials
             youthJobs: 38 // Youth employment programs
         },
         taxPolicy: {
             nhrRegime: 40, // Non-habitual resident regime
             wealthTax: 25 // Wealth tax considerations
-        }
-    },
-
-    // Accounting model coefficients (annual, million EUR).
-    budgetModel: {
-        referenceGdp: 267000,
-        revenues: {
-            incomeTax: { baseRevenue: 180000, gdpScaled: true },
-            corporateTax: { baseRevenue: 90000, gdpScaled: true },
-            vat: { baseRevenue: 110000, gdpScaled: true },
-            carbonTax: { baseRevenue: 12000, gdpScaled: true },
-            'housingPolicy.alTaxes': { baseRevenue: 9000, gdpScaled: true },
-            'housingPolicy.goldenVisa': { baseRevenue: 5000, gdpScaled: true },
-            'taxPolicy.nhrRegime': { baseRevenue: 3000, gdpScaled: true },
-            'taxPolicy.wealthTax': { baseRevenue: 1000, gdpScaled: true }
-        },
-        costs: {
-            healthcareSpending: { baseCost: 50000, gdpScaled: true },
-            educationSpending: { baseCost: 35000, gdpScaled: true },
-            welfareSpending: { baseCost: 24000, gdpScaled: true },
-            transportSpending: { baseCost: 15000, gdpScaled: true },
-            digitalInfrastructure: { baseCost: 12000, gdpScaled: true },
-            policeSpending: { baseCost: 14000, gdpScaled: true },
-            justiceSpending: { baseCost: 9000, gdpScaled: true },
-            greenEnergy: { baseCost: 8000, gdpScaled: true },
-            incomeTax: { baseCost: 0, gdpScaled: true },
-            corporateTax: { baseCost: 0, gdpScaled: true },
-            vat: { baseCost: 0, gdpScaled: true },
-            carbonTax: { baseCost: 0, gdpScaled: true },
-            'housingPolicy.maisHabitacao': { baseCost: 15000, gdpScaled: true },
-            'housingPolicy.goldenVisa': { baseCost: 3000, gdpScaled: true },
-            'housingPolicy.alTaxes': { baseCost: 1000, gdpScaled: true },
-            'housingPolicy.rentControl': { baseCost: 7000, gdpScaled: true },
-            'laborPolicy.minimumWage': { baseCost: 12000, gdpScaled: true },
-            'laborPolicy.fourDayWeek': { baseCost: 10000, gdpScaled: true },
-            'laborPolicy.youthJobs': { baseCost: 11000, gdpScaled: true },
-            'taxPolicy.nhrRegime': { baseCost: 1500, gdpScaled: true },
-            'taxPolicy.wealthTax': { baseCost: 800, gdpScaled: true }
         }
     },
 
@@ -217,7 +171,6 @@ const portugalState = {
             rentBurden: 0.45,
             consumption: 0.65,
             investment: 0.50,
-            govSpending: 0.55,
             netExports: 0.45
         }
     }
@@ -227,6 +180,10 @@ const portugalState = {
 function initializeGameState() {
     // Deep copy the initial state to avoid mutation
     window.gameState = JSON.parse(JSON.stringify(portugalState));
+    seedNodeInitialValuesFromRegistry(window.gameState);
+    if (typeof recomputeDerivedEconomyMetrics === 'function') {
+        recomputeDerivedEconomyMetrics(window.gameState);
+    }
     if (typeof initializeSimulationNodes === 'function') {
         initializeSimulationNodes(window.gameState);
     }
@@ -239,38 +196,112 @@ function getGameState() {
     return window.gameState;
 }
 
+function getValueAtPath(source, path) {
+    if (!source || !path) return undefined;
+    const segments = String(path).split('.');
+    let current = source;
+    for (const segment of segments) {
+        if (!current || typeof current !== 'object' || !Object.prototype.hasOwnProperty.call(current, segment)) {
+            return undefined;
+        }
+        current = current[segment];
+    }
+    return current;
+}
+
+function setValueAtPath(source, path, value) {
+    if (!source || !path) return false;
+    const segments = String(path).split('.');
+    let current = source;
+    for (let i = 0; i < segments.length - 1; i++) {
+        const segment = segments[i];
+        if (!current || typeof current !== 'object' || !Object.prototype.hasOwnProperty.call(current, segment)) {
+            return false;
+        }
+        current = current[segment];
+    }
+    const lastSegment = segments[segments.length - 1];
+    if (!current || typeof current !== 'object' || !Object.prototype.hasOwnProperty.call(current, lastSegment)) {
+        return false;
+    }
+    current[lastSegment] = value;
+    return true;
+}
+
+function seedNodeInitialValuesFromRegistry(state) {
+    if (!state) {
+        throw new Error('Cannot seed node initial values: state is unavailable.');
+    }
+    if (typeof getNodeRegistryRows !== 'function') {
+        throw new Error('Cannot seed node initial values: node registry API is unavailable.');
+    }
+    const rows = getNodeRegistryRows();
+    if (!Array.isArray(rows) || rows.length === 0) {
+        throw new Error('Cannot seed node initial values: node registry is empty.');
+    }
+
+    rows.forEach((row) => {
+        const nodeId = row?.nodeId;
+        const storagePath = row?.storagePath;
+        const initialValue = Number(row?.initialValue);
+        if (!nodeId || !storagePath || !Number.isFinite(initialValue)) {
+            throw new Error(`Invalid registry seed row for node "${nodeId || 'unknown'}".`);
+        }
+        const current = getValueAtPath(state, storagePath);
+        if (typeof current !== 'number' || !Number.isFinite(current)) {
+            throw new Error(`Cannot seed node "${nodeId}": storage_path "${storagePath}" is not numeric in base state.`);
+        }
+        const applied = setValueAtPath(state, storagePath, initialValue);
+        if (!applied) {
+            throw new Error(`Cannot seed node "${nodeId}": failed to apply initial value at "${storagePath}".`);
+        }
+    });
+}
+
+function getPolicyRegistryRow(policyName) {
+    if (typeof getNodeRegistryRowById !== 'function') return null;
+    const row = getNodeRegistryRowById(policyName);
+    if (!row) return null;
+    if (row.nodeType !== 'policy') return null;
+    if (!row.mutableByPlayer) return null;
+    return row;
+}
+
 // Function to update a specific policy value
 function updatePolicyValue(policyName, value) {
-    if (window.gameState) {
-        // Handle nested policy names (e.g., "housingPolicy.maisHabitacao")
-        if (policyName.includes('.')) {
-            const [category, policy] = policyName.split('.');
-            if (window.gameState.policies[category] && window.gameState.policies[category][policy] !== undefined) {
-                window.gameState.policies[category][policy] = value;
-                console.log(`Policy ${policyName} updated to ${value}`);
-                return true;
-            }
-        } else if (window.gameState.policies[policyName] !== undefined) {
-            window.gameState.policies[policyName] = value;
-            console.log(`Policy ${policyName} updated to ${value}`);
-            return true;
+    if (!window.gameState) return false;
+    if (typeof getNodeRegistryRowById === 'function') {
+        const row = getNodeRegistryRowById(policyName);
+        if (!row) {
+            console.error(`Policy update rejected: unknown node "${policyName}".`);
+            return false;
         }
+        if (row.nodeType !== 'policy' || !row.mutableByPlayer) {
+            console.error(`Policy update rejected: "${policyName}" is not a mutable policy node.`);
+            return false;
+        }
+    }
+    const node = getPolicyRegistryRow(policyName);
+    if (!node) return false;
+
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue)) return false;
+    const min = Number.isFinite(node.min) ? node.min : 0;
+    const max = Number.isFinite(node.max) ? node.max : 100;
+    const clamped = Math.max(min, Math.min(max, numericValue));
+    const updated = setValueAtPath(window.gameState, node.storagePath, clamped);
+    if (updated) {
+        console.log(`Policy ${policyName} updated to ${clamped}`);
+        return true;
     }
     return false;
 }
 
 // Function to get a specific policy value
 function getPolicyValue(policyName) {
-    if (window.gameState) {
-        // Handle nested policy names (e.g., "housingPolicy.maisHabitacao")
-        if (policyName.includes('.')) {
-            const [category, policy] = policyName.split('.');
-            if (window.gameState.policies[category] && window.gameState.policies[category][policy] !== undefined) {
-                return window.gameState.policies[category][policy];
-            }
-        } else if (window.gameState.policies[policyName] !== undefined) {
-            return window.gameState.policies[policyName];
-        }
-    }
-    return null;
+    if (!window.gameState) return null;
+    const node = getPolicyRegistryRow(policyName);
+    if (!node) return null;
+    const current = getValueAtPath(window.gameState, node.storagePath);
+    return (typeof current === 'number' && Number.isFinite(current)) ? current : null;
 }

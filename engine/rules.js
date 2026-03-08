@@ -8,97 +8,34 @@ const relationshipLoadState = {
     error: null
 };
 
+const nodeRegistryLoadState = {
+    loaded: false,
+    loading: false,
+    error: null,
+    policiesLoaded: false,
+    metricsLoaded: false
+};
+
 let relationshipEdges = [];
 let edgesByTarget = new Map();
 let relationshipNodeIds = new Set();
 let nodeConfigs = {};
-const ACCOUNTING_TARGET_BLOCKLIST = new Set(['income', 'expenditure', 'deficit', 'debt']);
-
-const POLICY_NODE_IDS = [
-    'incomeTax',
-    'corporateTax',
-    'vat',
-    'healthcareSpending',
-    'educationSpending',
-    'welfareSpending',
-    'transportSpending',
-    'digitalInfrastructure',
-    'policeSpending',
-    'justiceSpending',
-    'greenEnergy',
-    'carbonTax',
-    'housingPolicy.maisHabitacao',
-    'housingPolicy.goldenVisa',
-    'housingPolicy.alTaxes',
-    'housingPolicy.rentControl',
-    'laborPolicy.minimumWage',
-    'laborPolicy.fourDayWeek',
-    'laborPolicy.youthJobs',
-    'taxPolicy.nhrRegime',
-    'taxPolicy.wealthTax'
-];
-
-const SIMULATED_NODE_DEFAULTS = {
-    gdp: { min: 180000, max: 420000, k: 1.6, modifierRange: 0.28 },
-    unemployment_rate: { min: 0, max: 25, k: 1.7, modifierRange: 0.22 },
-    inflation_consumer_prices: { min: -1, max: 12, k: 1.7, modifierRange: 0.22 },
-    consumption: { min: 0, max: 100, k: 1.6, modifierRange: 0.30 },
-    investment: { min: 0, max: 100, k: 1.55, modifierRange: 0.28 },
-    govSpending: { min: 0, max: 100, k: 1.6, modifierRange: 0.30 },
-    netExports: { min: 0, max: 100, k: 1.5, modifierRange: 0.26 },
-    happiness: { min: 0, max: 100, k: 1.6, modifierRange: 0.35 },
-    health: { min: 0, max: 100, k: 1.6, modifierRange: 0.32 },
-    education: { min: 0, max: 100, k: 1.6, modifierRange: 0.30 },
-    safety: { min: 0, max: 100, k: 1.5, modifierRange: 0.28 },
-    youthIndependence: { min: 0, max: 100, k: 1.6, modifierRange: 0.30 },
-    rentBurden: { min: 0, max: 100, k: 1.6, modifierRange: 0.35 },
-
-    gini_coefficient: { min: 20, max: 40, k: 1.4, modifierRange: 0.10 },
-    infant_mortality_rate: { min: 1.5, max: 6, k: 1.4, modifierRange: 0.10 },
-    life_expectancy_at_birth: { min: 75, max: 85, k: 1.4, modifierRange: 0.10 },
-    intentional_homicide_rate: { min: 0.2, max: 2, k: 1.4, modifierRange: 0.10 },
-    adult_literacy_rate: { min: 90, max: 100, k: 1.4, modifierRange: 0.10 },
-    co2_emissions_per_capita: { min: 2, max: 7, k: 1.55, modifierRange: 0.16 },
-    labor_force_participation_rate: { min: 50, max: 65, k: 1.55, modifierRange: 0.16 },
-    central_government_debt: { min: 60, max: 140, k: 1.55, modifierRange: 0.16 },
-    tax_revenue: { min: 30, max: 45, k: 1.55, modifierRange: 0.16 },
-    total_fertility_rate: { min: 1, max: 2.1, k: 1.4, modifierRange: 0.10 },
-    renewable_energy_consumption: { min: 20, max: 60, k: 1.55, modifierRange: 0.16 },
-    poverty_headcount_ratio: { min: 0, max: 5, k: 1.4, modifierRange: 0.10 },
-    foreign_direct_investment_net: { min: -2, max: 10, k: 1.55, modifierRange: 0.16 },
-    maternal_mortality_ratio: { min: 2, max: 20, k: 1.4, modifierRange: 0.10 },
-    population_density: { min: 110, max: 125, k: 1.4, modifierRange: 0.10 },
-    individuals_using_internet: { min: 60, max: 100, k: 1.55, modifierRange: 0.16 },
-    access_to_electricity: { min: 95, max: 100, k: 1.4, modifierRange: 0.10 },
-    military_expenditure: { min: 0.5, max: 3, k: 1.55, modifierRange: 0.16 },
-    mean_years_of_schooling: { min: 7, max: 14, k: 1.4, modifierRange: 0.10 },
-    women_in_parliament: { min: 20, max: 50, k: 1.4, modifierRange: 0.10 },
-    urban_population: { min: 50, max: 80, k: 1.4, modifierRange: 0.10 },
-    median_age: { min: 35, max: 55, k: 1.4, modifierRange: 0.10 },
-    net_migration_rate: { min: -5, max: 20, k: 1.55, modifierRange: 0.16 },
-    suicide_mortality_rate: { min: 5, max: 15, k: 1.4, modifierRange: 0.10 },
-    physicians_per_1000_people: { min: 3, max: 8, k: 1.4, modifierRange: 0.10 },
-    mobile_cellular_subscriptions: { min: 100, max: 150, k: 1.55, modifierRange: 0.16 },
-    arable_land: { min: 8, max: 15, k: 1.4, modifierRange: 0.10 },
-    forest_area: { min: 30, max: 45, k: 1.4, modifierRange: 0.10 },
-    central_bank_policy_rate: { min: 0, max: 8, k: 1.7, modifierRange: 0.22 },
-    nominal_minimum_wage: { min: 500, max: 1500, k: 1.55, modifierRange: 0.16 },
-    trade_union_density_rate: { min: 5, max: 30, k: 1.4, modifierRange: 0.10 },
-    average_annual_real_wages: { min: 12000, max: 30000, k: 1.55, modifierRange: 0.16 },
-    incarceration_rate: { min: 80, max: 160, k: 1.55, modifierRange: 0.16 },
-    road_traffic_mortality_rate: { min: 2, max: 15, k: 1.4, modifierRange: 0.10 },
-    home_ownership_rate: { min: 50, max: 85, k: 1.4, modifierRange: 0.10 },
-    tertiary_education_attainment: { min: 20, max: 55, k: 1.55, modifierRange: 0.16 },
-    adult_obesity_rate: { min: 10, max: 35, k: 1.4, modifierRange: 0.10 },
-    youth_unemployment_rate: { min: 10, max: 45, k: 1.7, modifierRange: 0.22 },
-    public_expenditure_on_health: { min: 4, max: 10, k: 1.55, modifierRange: 0.16 },
-    public_expenditure_on_education: { min: 3, max: 8, k: 1.55, modifierRange: 0.16 },
-    air_pollution_pm25: { min: 4, max: 15, k: 1.55, modifierRange: 0.16 },
-    fixed_broadband_subscriptions: { min: 20, max: 60, k: 1.55, modifierRange: 0.16 }
-};
-
-const INTEGER_ECONOMY_NODES = new Set(['gdp', 'debt', 'nominal_minimum_wage', 'average_annual_real_wages']);
-const LEGACY_POPULATION_INTEGER_NODES = new Set(['happiness', 'health', 'education', 'safety', 'youthIndependence', 'rentBurden']);
+let nodeRegistryRows = [];
+let nodeRegistryById = new Map();
+let knownNodeIds = new Set();
+let policyNodeIds = [];
+let policyNodeIdSet = new Set();
+let metricNodeDefaults = {};
+let graphNodeRegistryRows = [];
+let policyFiscalRows = [];
+let pendingPolicyRows = [];
+let pendingMetricRows = [];
+const ACCOUNTING_TARGET_BLOCKLIST = new Set([
+    'income',
+    'expenditure',
+    'deficit',
+    'debt'
+]);
 
 function clamp01(value) {
     return Math.max(0, Math.min(1, value));
@@ -147,14 +84,542 @@ function parseCsvLine(line) {
     return out;
 }
 
+function parseOptionalFiniteNumber(rawValue, fieldName, rowNumber, sourceFile) {
+    const raw = String(rawValue ?? '').trim();
+    if (raw === '') return null;
+    const value = Number(raw);
+    if (!Number.isFinite(value)) {
+        throw new Error(`Invalid ${fieldName} "${raw}" on ${sourceFile} row ${rowNumber}.`);
+    }
+    return value;
+}
+
+function parseRequiredFiniteNumber(rawValue, fieldName, rowNumber, sourceFile) {
+    const value = parseOptionalFiniteNumber(rawValue, fieldName, rowNumber, sourceFile);
+    if (!Number.isFinite(value)) {
+        throw new Error(`Missing ${fieldName} on ${sourceFile} row ${rowNumber}.`);
+    }
+    return value;
+}
+
+function parsePositiveInteger(rawValue, fieldName, rowNumber, sourceFile) {
+    const raw = String(rawValue ?? '').trim();
+    const value = Number(raw);
+    if (!Number.isInteger(value) || value <= 0) {
+        throw new Error(`Invalid ${fieldName} "${raw}" on ${sourceFile} row ${rowNumber}.`);
+    }
+    return value;
+}
+
+function parseYesNo(rawValue, fieldName, rowNumber, sourceFile) {
+    const raw = String(rawValue ?? '').trim().toLowerCase();
+    if (!['yes', 'no'].includes(raw)) {
+        throw new Error(`Invalid ${fieldName} "${raw}" on ${sourceFile} row ${rowNumber}.`);
+    }
+    return raw === 'yes';
+}
+
+function getValueAtPath(source, path) {
+    if (!source || !path) return undefined;
+    const segments = String(path).split('.');
+    let current = source;
+    for (const segment of segments) {
+        if (!current || typeof current !== 'object' || !Object.prototype.hasOwnProperty.call(current, segment)) {
+            return undefined;
+        }
+        current = current[segment];
+    }
+    return current;
+}
+
+function setValueAtPath(source, path, value) {
+    if (!source || !path) return false;
+    const segments = String(path).split('.');
+    let current = source;
+    for (let i = 0; i < segments.length - 1; i++) {
+        const segment = segments[i];
+        if (!current || typeof current !== 'object' || !Object.prototype.hasOwnProperty.call(current, segment)) {
+            return false;
+        }
+        current = current[segment];
+    }
+    const lastSegment = segments[segments.length - 1];
+    if (!current || typeof current !== 'object' || !Object.prototype.hasOwnProperty.call(current, lastSegment)) {
+        return false;
+    }
+    current[lastSegment] = value;
+    return true;
+}
+
+function getNodeRegistryValidationState() {
+    if (typeof portugalState !== 'undefined' && portugalState) {
+        return portugalState;
+    }
+    if (typeof getGameState === 'function') {
+        return getGameState();
+    }
+    return null;
+}
+
+function parseRegistryCsvLines(csvText, sourceFile) {
+    const lines = csvText
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0 && !line.startsWith('#'));
+
+    if (lines.length < 2) {
+        throw new Error(`${sourceFile} must contain a header and at least one row.`);
+    }
+    return lines;
+}
+
+function getHeaderIndexByName(header) {
+    const out = new Map();
+    header.forEach((column, index) => {
+        out.set(String(column || '').trim().toLowerCase(), index);
+    });
+    return out;
+}
+
+function getCsvCell(row, headerIndexByName, columnName) {
+    const columnIndex = headerIndexByName.get(columnName);
+    if (typeof columnIndex !== 'number') return '';
+    return String(row[columnIndex] || '').trim();
+}
+
+function parsePoliciesCsv(csvText) {
+    const sourceFile = 'policies.csv';
+    const lines = parseRegistryCsvLines(csvText, sourceFile);
+    const header = parseCsvLine(lines[0]);
+    const headerIndexByName = getHeaderIndexByName(header);
+    const requiredColumns = [
+        'policy_id',
+        'storage_path',
+        'initial_value',
+        'min',
+        'max',
+        'display_name',
+        'short_label',
+        'description',
+        'icon',
+        'color_token',
+        'value_unit',
+        'graph_enabled',
+        'ui_order',
+        'base_cost',
+        'cost_slope',
+        'base_revenue',
+        'revenue_slope',
+        'gdp_scaled',
+        'revenue_channel'
+    ];
+    const missingColumns = requiredColumns.filter((column) => !headerIndexByName.has(column));
+    if (missingColumns.length) {
+        throw new Error(`${sourceFile} missing required columns: ${missingColumns.join(', ')}`);
+    }
+
+    const seenPolicyIds = new Set();
+    const seenUiOrders = new Set();
+    const parsedRows = [];
+
+    for (let i = 1; i < lines.length; i++) {
+        const row = parseCsvLine(lines[i]);
+        const rowNumber = i + 1;
+        if (row.length !== header.length) {
+            throw new Error(`Invalid ${sourceFile} row ${rowNumber}: expected ${header.length} columns.`);
+        }
+
+        const policyId = getCsvCell(row, headerIndexByName, 'policy_id');
+        const storagePath = getCsvCell(row, headerIndexByName, 'storage_path');
+        const displayName = getCsvCell(row, headerIndexByName, 'display_name');
+        const shortLabel = getCsvCell(row, headerIndexByName, 'short_label');
+        const description = getCsvCell(row, headerIndexByName, 'description');
+        const icon = getCsvCell(row, headerIndexByName, 'icon');
+        const colorToken = getCsvCell(row, headerIndexByName, 'color_token');
+        const valueUnit = getCsvCell(row, headerIndexByName, 'value_unit');
+        const uiOrder = parsePositiveInteger(getCsvCell(row, headerIndexByName, 'ui_order'), 'ui_order', rowNumber, sourceFile);
+        const initialValue = parseRequiredFiniteNumber(getCsvCell(row, headerIndexByName, 'initial_value'), 'initial_value', rowNumber, sourceFile);
+        const min = parseRequiredFiniteNumber(getCsvCell(row, headerIndexByName, 'min'), 'min', rowNumber, sourceFile);
+        const max = parseRequiredFiniteNumber(getCsvCell(row, headerIndexByName, 'max'), 'max', rowNumber, sourceFile);
+        const graphEnabled = parseYesNo(getCsvCell(row, headerIndexByName, 'graph_enabled'), 'graph_enabled', rowNumber, sourceFile);
+        const gdpScaled = parseYesNo(getCsvCell(row, headerIndexByName, 'gdp_scaled'), 'gdp_scaled', rowNumber, sourceFile);
+        const revenueChannel = getCsvCell(row, headerIndexByName, 'revenue_channel').toLowerCase();
+        const baseCost = parseRequiredFiniteNumber(getCsvCell(row, headerIndexByName, 'base_cost'), 'base_cost', rowNumber, sourceFile);
+        const costSlope = parseRequiredFiniteNumber(getCsvCell(row, headerIndexByName, 'cost_slope'), 'cost_slope', rowNumber, sourceFile);
+        const baseRevenue = parseRequiredFiniteNumber(getCsvCell(row, headerIndexByName, 'base_revenue'), 'base_revenue', rowNumber, sourceFile);
+        const revenueSlope = parseRequiredFiniteNumber(getCsvCell(row, headerIndexByName, 'revenue_slope'), 'revenue_slope', rowNumber, sourceFile);
+
+        if (!policyId) throw new Error(`Missing policy_id on ${sourceFile} row ${rowNumber}.`);
+        if (seenPolicyIds.has(policyId)) throw new Error(`Duplicate policy_id "${policyId}" on ${sourceFile} row ${rowNumber}.`);
+        if (!storagePath) throw new Error(`Missing storage_path on ${sourceFile} row ${rowNumber}.`);
+        if (!displayName) throw new Error(`Missing display_name on ${sourceFile} row ${rowNumber}.`);
+        if (!shortLabel) throw new Error(`Missing short_label on ${sourceFile} row ${rowNumber}.`);
+        if (!description) throw new Error(`Missing description on ${sourceFile} row ${rowNumber}.`);
+        if (!icon) throw new Error(`Missing icon on ${sourceFile} row ${rowNumber}.`);
+        if (!colorToken) throw new Error(`Missing color_token on ${sourceFile} row ${rowNumber}.`);
+        if (!valueUnit) throw new Error(`Missing value_unit on ${sourceFile} row ${rowNumber}.`);
+        if (!['tax', 'non_tax', 'none'].includes(revenueChannel)) {
+            throw new Error(`Invalid revenue_channel "${revenueChannel}" on ${sourceFile} row ${rowNumber}.`);
+        }
+        if (max < min) throw new Error(`Invalid bounds on ${sourceFile} row ${rowNumber}: max must be >= min.`);
+        if (initialValue < min || initialValue > max) {
+            throw new Error(`Initial value for "${policyId}" must be within [min,max] on ${sourceFile} row ${rowNumber}.`);
+        }
+        const hasRevenue = baseRevenue !== 0 || revenueSlope !== 0;
+        if (revenueChannel === 'tax' && !hasRevenue) {
+            throw new Error(`Policy "${policyId}" has revenue_channel=tax but zero revenue coefficients on ${sourceFile} row ${rowNumber}.`);
+        }
+        if (revenueChannel === 'none' && hasRevenue) {
+            throw new Error(`Policy "${policyId}" has revenue_channel=none but non-zero revenue coefficients on ${sourceFile} row ${rowNumber}.`);
+        }
+        if (seenUiOrders.has(uiOrder)) {
+            throw new Error(`Duplicate ui_order "${uiOrder}" in ${sourceFile} row ${rowNumber}.`);
+        }
+
+        seenPolicyIds.add(policyId);
+        seenUiOrders.add(uiOrder);
+        parsedRows.push({
+            nodeId: policyId,
+            nodeType: 'policy',
+            mutableByPlayer: true,
+            storagePath,
+            initialValue,
+            min,
+            max,
+            k: null,
+            modifierRange: null,
+            displayName,
+            shortLabel,
+            description,
+            icon,
+            colorToken,
+            valueUnit,
+            graphEnabled,
+            simulationEnabled: false,
+            uiOrder,
+            baseCost,
+            costSlope,
+            baseRevenue,
+            revenueSlope,
+            gdpScaled,
+            revenueChannel
+        });
+    }
+
+    return parsedRows;
+}
+
+function parseMetricsCsv(csvText) {
+    const sourceFile = 'metrics.csv';
+    const lines = parseRegistryCsvLines(csvText, sourceFile);
+    const header = parseCsvLine(lines[0]);
+    const headerIndexByName = getHeaderIndexByName(header);
+    const requiredColumns = [
+        'metric_id',
+        'storage_path',
+        'initial_value',
+        'min',
+        'max',
+        'k',
+        'modifier_range',
+        'display_name',
+        'short_label',
+        'description',
+        'icon',
+        'color_token',
+        'value_unit',
+        'graph_enabled',
+        'simulation_enabled',
+        'ui_order'
+    ];
+    const forbiddenColumns = ['base_cost', 'cost_slope', 'base_revenue', 'revenue_slope', 'gdp_scaled'];
+    const missingColumns = requiredColumns.filter((column) => !headerIndexByName.has(column));
+    if (missingColumns.length) {
+        throw new Error(`${sourceFile} missing required columns: ${missingColumns.join(', ')}`);
+    }
+    const forbiddenPresent = forbiddenColumns.filter((column) => headerIndexByName.has(column));
+    if (forbiddenPresent.length) {
+        throw new Error(`${sourceFile} contains policy-only columns: ${forbiddenPresent.join(', ')}`);
+    }
+
+    const seenMetricIds = new Set();
+    const seenUiOrders = new Set();
+    const parsedRows = [];
+
+    for (let i = 1; i < lines.length; i++) {
+        const row = parseCsvLine(lines[i]);
+        const rowNumber = i + 1;
+        if (row.length !== header.length) {
+            throw new Error(`Invalid ${sourceFile} row ${rowNumber}: expected ${header.length} columns.`);
+        }
+
+        const metricId = getCsvCell(row, headerIndexByName, 'metric_id');
+        const storagePath = getCsvCell(row, headerIndexByName, 'storage_path');
+        const displayName = getCsvCell(row, headerIndexByName, 'display_name');
+        const shortLabel = getCsvCell(row, headerIndexByName, 'short_label');
+        const description = getCsvCell(row, headerIndexByName, 'description');
+        const icon = getCsvCell(row, headerIndexByName, 'icon');
+        const colorToken = getCsvCell(row, headerIndexByName, 'color_token');
+        const valueUnit = getCsvCell(row, headerIndexByName, 'value_unit');
+        const uiOrder = parsePositiveInteger(getCsvCell(row, headerIndexByName, 'ui_order'), 'ui_order', rowNumber, sourceFile);
+        const initialValue = parseRequiredFiniteNumber(getCsvCell(row, headerIndexByName, 'initial_value'), 'initial_value', rowNumber, sourceFile);
+        const min = parseRequiredFiniteNumber(getCsvCell(row, headerIndexByName, 'min'), 'min', rowNumber, sourceFile);
+        const max = parseRequiredFiniteNumber(getCsvCell(row, headerIndexByName, 'max'), 'max', rowNumber, sourceFile);
+        const k = parseRequiredFiniteNumber(getCsvCell(row, headerIndexByName, 'k'), 'k', rowNumber, sourceFile);
+        const modifierRange = parseRequiredFiniteNumber(getCsvCell(row, headerIndexByName, 'modifier_range'), 'modifier_range', rowNumber, sourceFile);
+        const graphEnabled = parseYesNo(getCsvCell(row, headerIndexByName, 'graph_enabled'), 'graph_enabled', rowNumber, sourceFile);
+        const simulationEnabled = parseYesNo(getCsvCell(row, headerIndexByName, 'simulation_enabled'), 'simulation_enabled', rowNumber, sourceFile);
+
+        if (!metricId) throw new Error(`Missing metric_id on ${sourceFile} row ${rowNumber}.`);
+        if (seenMetricIds.has(metricId)) throw new Error(`Duplicate metric_id "${metricId}" on ${sourceFile} row ${rowNumber}.`);
+        if (!storagePath) throw new Error(`Missing storage_path on ${sourceFile} row ${rowNumber}.`);
+        if (!displayName) throw new Error(`Missing display_name on ${sourceFile} row ${rowNumber}.`);
+        if (!shortLabel) throw new Error(`Missing short_label on ${sourceFile} row ${rowNumber}.`);
+        if (!description) throw new Error(`Missing description on ${sourceFile} row ${rowNumber}.`);
+        if (!icon) throw new Error(`Missing icon on ${sourceFile} row ${rowNumber}.`);
+        if (!colorToken) throw new Error(`Missing color_token on ${sourceFile} row ${rowNumber}.`);
+        if (!valueUnit) throw new Error(`Missing value_unit on ${sourceFile} row ${rowNumber}.`);
+        if (max < min) throw new Error(`Invalid bounds on ${sourceFile} row ${rowNumber}: max must be >= min.`);
+        if (initialValue < min || initialValue > max) {
+            throw new Error(`Initial value for "${metricId}" must be within [min,max] on ${sourceFile} row ${rowNumber}.`);
+        }
+        if (seenUiOrders.has(uiOrder)) {
+            throw new Error(`Duplicate ui_order "${uiOrder}" in ${sourceFile} row ${rowNumber}.`);
+        }
+
+        seenMetricIds.add(metricId);
+        seenUiOrders.add(uiOrder);
+        parsedRows.push({
+            nodeId: metricId,
+            nodeType: 'metric',
+            mutableByPlayer: false,
+            storagePath,
+            initialValue,
+            min,
+            max,
+            k,
+            modifierRange,
+            displayName,
+            shortLabel,
+            description,
+            icon,
+            colorToken,
+            valueUnit,
+            graphEnabled,
+            simulationEnabled,
+            uiOrder,
+            baseCost: 0,
+            costSlope: 0,
+            baseRevenue: 0,
+            revenueSlope: 0,
+            gdpScaled: true
+        });
+    }
+
+    return parsedRows;
+}
+
+function assertNodeRegistryParity(parsedRows) {
+    const baseState = getNodeRegistryValidationState();
+    if (!baseState) {
+        throw new Error('Unable to validate node registry storage paths: base state not available.');
+    }
+
+    const policies = parsedRows.filter((row) => row.nodeType === 'policy');
+    const metrics = parsedRows.filter((row) => row.nodeType === 'metric');
+    if (!policies.length) throw new Error('policy registry must define at least one policy node.');
+    if (!metrics.length) throw new Error('metric registry must define at least one metric node.');
+
+    parsedRows.forEach((row) => {
+        const value = getValueAtPath(baseState, row.storagePath);
+        if (typeof value !== 'number' || !Number.isFinite(value)) {
+            throw new Error(`Registry storage_path "${row.storagePath}" for node "${row.nodeId}" does not resolve to a numeric base-state value.`);
+        }
+    });
+}
+
+function rebuildNodeRegistryIndexes(parsedRows) {
+    const seenNodeIds = new Set();
+    parsedRows.forEach((row) => {
+        if (seenNodeIds.has(row.nodeId)) {
+            throw new Error(`Duplicate node id "${row.nodeId}" across policies.csv and metrics.csv.`);
+        }
+        seenNodeIds.add(row.nodeId);
+    });
+
+    const sortedRows = [...parsedRows].sort((a, b) => {
+        if (a.nodeType !== b.nodeType) {
+            return a.nodeType === 'metric' ? -1 : 1;
+        }
+        return a.uiOrder - b.uiOrder;
+    });
+
+    nodeRegistryRows = sortedRows;
+    nodeRegistryById = new Map(sortedRows.map((row) => [row.nodeId, row]));
+    knownNodeIds = new Set(sortedRows.map((row) => row.nodeId));
+    policyNodeIds = sortedRows.filter((row) => row.nodeType === 'policy').map((row) => row.nodeId);
+    policyNodeIdSet = new Set(policyNodeIds);
+    graphNodeRegistryRows = sortedRows.filter((row) => row.graphEnabled);
+    policyFiscalRows = sortedRows
+        .filter((row) => row.nodeType === 'policy')
+        .map((row) => ({
+            policyId: row.nodeId,
+            min: row.min,
+            max: row.max,
+            baseCost: row.baseCost,
+            costSlope: row.costSlope,
+            baseRevenue: row.baseRevenue,
+            revenueSlope: row.revenueSlope,
+            gdpScaled: row.gdpScaled,
+            revenueChannel: row.revenueChannel
+        }));
+
+    metricNodeDefaults = {};
+    sortedRows
+        .filter((row) => row.nodeType === 'metric' && row.simulationEnabled)
+        .forEach((row) => {
+            metricNodeDefaults[row.nodeId] = {
+                min: row.min,
+                max: row.max,
+                k: row.k,
+                modifierRange: row.modifierRange
+            };
+        });
+
+    if (Object.keys(metricNodeDefaults).length === 0) {
+        throw new Error('metrics.csv must define at least one simulation_enabled metric node.');
+    }
+}
+
+function resetNodeRegistryData() {
+    nodeRegistryRows = [];
+    nodeRegistryById = new Map();
+    knownNodeIds = new Set();
+    policyNodeIds = [];
+    policyNodeIdSet = new Set();
+    metricNodeDefaults = {};
+    graphNodeRegistryRows = [];
+    policyFiscalRows = [];
+    pendingPolicyRows = [];
+    pendingMetricRows = [];
+}
+
+function ensureNodeRegistryReady() {
+    if (!isNodeRegistryDataReady()) {
+        throw new Error('Node registry is not loaded. Load engine/policies.csv and engine/metrics.csv before using node-dependent runtime APIs.');
+    }
+}
+
+function finalizeNodeRegistryLoad() {
+    if (!nodeRegistryLoadState.policiesLoaded || !nodeRegistryLoadState.metricsLoaded) {
+        nodeRegistryLoadState.loaded = false;
+        return [];
+    }
+    const parsedRows = [...pendingPolicyRows, ...pendingMetricRows];
+    assertNodeRegistryParity(parsedRows);
+    rebuildNodeRegistryIndexes(parsedRows);
+    nodeRegistryLoadState.loaded = true;
+    nodeRegistryLoadState.error = null;
+    return nodeRegistryRows;
+}
+
+async function loadPoliciesCsv(url = 'engine/policies.csv') {
+    nodeRegistryLoadState.loading = true;
+    nodeRegistryLoadState.loaded = false;
+    nodeRegistryLoadState.error = null;
+
+    try {
+        const response = await fetch(url, { cache: 'no-store' });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status} while loading ${url}`);
+        }
+
+        const text = await response.text();
+        pendingPolicyRows = parsePoliciesCsv(text);
+        nodeRegistryLoadState.policiesLoaded = true;
+        const rows = finalizeNodeRegistryLoad();
+        nodeRegistryLoadState.loading = false;
+        return rows;
+    } catch (error) {
+        resetNodeRegistryData();
+        nodeRegistryLoadState.policiesLoaded = false;
+        nodeRegistryLoadState.metricsLoaded = false;
+        nodeRegistryLoadState.loading = false;
+        nodeRegistryLoadState.loaded = false;
+        nodeRegistryLoadState.error = error?.message || 'Unknown error while loading policies CSV.';
+        throw error;
+    }
+}
+
+async function loadMetricsCsv(url = 'engine/metrics.csv') {
+    nodeRegistryLoadState.loading = true;
+    nodeRegistryLoadState.loaded = false;
+    nodeRegistryLoadState.error = null;
+
+    try {
+        const response = await fetch(url, { cache: 'no-store' });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status} while loading ${url}`);
+        }
+
+        const text = await response.text();
+        pendingMetricRows = parseMetricsCsv(text);
+        nodeRegistryLoadState.metricsLoaded = true;
+        const rows = finalizeNodeRegistryLoad();
+        nodeRegistryLoadState.loading = false;
+        return rows;
+    } catch (error) {
+        resetNodeRegistryData();
+        nodeRegistryLoadState.policiesLoaded = false;
+        nodeRegistryLoadState.metricsLoaded = false;
+        nodeRegistryLoadState.loading = false;
+        nodeRegistryLoadState.loaded = false;
+        nodeRegistryLoadState.error = error?.message || 'Unknown error while loading metrics CSV.';
+        throw error;
+    }
+}
+
+function isNodeRegistryDataReady() {
+    return nodeRegistryLoadState.loaded === true
+        && nodeRegistryLoadState.policiesLoaded === true
+        && nodeRegistryLoadState.metricsLoaded === true
+        && nodeRegistryRows.length > 0;
+}
+
+function getNodeRegistryRows() {
+    return nodeRegistryRows.map((row) => ({ ...row }));
+}
+
+function getNodeRegistryRowById(nodeId) {
+    const row = nodeRegistryById.get(nodeId);
+    return row ? { ...row } : null;
+}
+
 function getKnownNodeIds() {
-    return new Set([
-        ...POLICY_NODE_IDS,
-        ...Object.keys(SIMULATED_NODE_DEFAULTS),
-        'approval',
-        'stability',
-        'corruption'
-    ]);
+    ensureNodeRegistryReady();
+    return new Set(knownNodeIds);
+}
+
+function getPolicyNodeIds() {
+    ensureNodeRegistryReady();
+    return [...policyNodeIds];
+}
+
+function getMetricNodeDefaults() {
+    ensureNodeRegistryReady();
+    return Object.fromEntries(
+        Object.entries(metricNodeDefaults).map(([nodeId, defaults]) => [nodeId, { ...defaults }])
+    );
+}
+
+function getGraphNodeRegistryRows() {
+    ensureNodeRegistryReady();
+    return graphNodeRegistryRows.map((row) => ({ ...row }));
+}
+
+function getPolicyFiscalRows() {
+    ensureNodeRegistryReady();
+    return policyFiscalRows.map((row) => ({ ...row }));
 }
 
 function parseCsv(csvText) {
@@ -228,6 +693,7 @@ function parseCsv(csvText) {
         let weightRaw;
         let inertiaRaw;
         let status = 'approved';
+        let parsedSign = null;
 
         if (isLegacyFormat) {
             [source, target, weightRaw, inertiaRaw] = row;
@@ -244,6 +710,7 @@ function parseCsv(csvText) {
             const targetClass = getCell(row, 'target_class').toLowerCase();
             const evidenceStrength = getCell(row, 'evidence_strength').toLowerCase();
             status = getCell(row, 'status').toLowerCase();
+            parsedSign = sign;
             const causalMechanism = getCell(row, 'causal_mechanism');
             const evidenceSource = getCell(row, 'evidence_source');
 
@@ -276,12 +743,21 @@ function parseCsv(csvText) {
         }
         if (source === target) throw new Error(`Self-link "${source}" on row ${i + 1} is not allowed.`);
         if (!Number.isFinite(weight)) throw new Error(`Invalid Weight "${weightRaw}" on row ${i + 1}.`);
+        if (isExtendedFormat && parsedSign === 'positive' && !(weight > 0)) {
+            throw new Error(`Sign/weight mismatch on row ${i + 1}: sign=positive requires weight > 0.`);
+        }
+        if (isExtendedFormat && parsedSign === 'negative' && !(weight < 0)) {
+            throw new Error(`Sign/weight mismatch on row ${i + 1}: sign=negative requires weight < 0.`);
+        }
         if (!Number.isInteger(inertia) || inertia < 1) throw new Error(`Invalid Inertia "${inertiaRaw}" on row ${i + 1}.`);
         if (seenPairs.has(pairKey)) throw new Error(`Duplicate edge "${pairKey}" on row ${i + 1}.`);
 
         seenPairs.add(pairKey);
         if (status !== 'approved') {
             continue;
+        }
+        if (policyNodeIdSet.has(target)) {
+            throw new Error(`Invalid Target "${target}" on row ${i + 1}: policy nodes are exogenous and cannot have inbound edges.`);
         }
         approvedCount++;
         parsedEdges.push({
@@ -300,6 +776,56 @@ function parseCsv(csvText) {
     return parsedEdges;
 }
 
+function getEdgeKey(source, target) {
+    return `${source}->${target}`;
+}
+
+function hasRequiredBudgetSign(weight, expectedSign) {
+    if (expectedSign === 'positive') return weight > 0;
+    if (expectedSign === 'negative') return weight < 0;
+    return false;
+}
+
+function validateRequiredBudgetEdges(edges) {
+    const edgeByKey = new Map(edges.map((edge) => [getEdgeKey(edge.source, edge.target), edge]));
+    const requiredEdges = [];
+
+    getPolicyFiscalRows().forEach((row) => {
+        if (row.baseCost !== 0 || row.costSlope !== 0) {
+            requiredEdges.push({
+                source: row.policyId,
+                target: 'budget.expenditure',
+                expectedSign: 'positive'
+            });
+        }
+        if (row.revenueChannel === 'tax') {
+            requiredEdges.push({
+                source: row.policyId,
+                target: 'tax_revenue',
+                expectedSign: 'positive'
+            });
+        }
+    });
+
+    requiredEdges.push(
+        { source: 'tax_revenue', target: 'budget.income', expectedSign: 'positive' },
+        { source: 'budget.income', target: 'budget.deficit', expectedSign: 'negative' },
+        { source: 'budget.expenditure', target: 'budget.deficit', expectedSign: 'positive' },
+        { source: 'budget.deficit', target: 'budget.debt', expectedSign: 'positive' }
+    );
+
+    requiredEdges.forEach((requiredEdge) => {
+        const edgeKey = getEdgeKey(requiredEdge.source, requiredEdge.target);
+        const edge = edgeByKey.get(edgeKey);
+        if (!edge) {
+            throw new Error(`Missing required budget edge "${edgeKey}".`);
+        }
+        if (!hasRequiredBudgetSign(edge.weight, requiredEdge.expectedSign)) {
+            throw new Error(`Invalid sign for "${edgeKey}": expected ${requiredEdge.expectedSign}.`);
+        }
+    });
+}
+
 function rebuildEdgeIndexes(edges) {
     edgesByTarget = new Map();
     relationshipNodeIds = new Set();
@@ -313,6 +839,7 @@ function rebuildEdgeIndexes(edges) {
 }
 
 async function loadRelationshipsCsv(url = 'engine/relationships.csv') {
+    ensureNodeRegistryReady();
     relationshipLoadState.loading = true;
     relationshipLoadState.loaded = false;
     relationshipLoadState.error = null;
@@ -325,6 +852,7 @@ async function loadRelationshipsCsv(url = 'engine/relationships.csv') {
 
         const text = await response.text();
         const parsed = parseCsv(text);
+        validateRequiredBudgetEdges(parsed);
         relationshipEdges = parsed;
         rebuildEdgeIndexes(relationshipEdges);
 
@@ -370,30 +898,17 @@ function getInboundEdges(targetId) {
 
 function getStateValueByNodeId(state, nodeId) {
     if (!state || !nodeId) return null;
-
-    if (nodeId.includes('.')) {
-        const parts = nodeId.split('.');
-        let current = state.policies;
-        for (const part of parts) {
-            if (!current || typeof current !== 'object' || !Object.prototype.hasOwnProperty.call(current, part)) {
-                return null;
-            }
-            current = current[part];
-        }
-        return typeof current === 'number' ? current : null;
-    }
-
-    if (state.policies && typeof state.policies[nodeId] === 'number') return state.policies[nodeId];
-    if (state.economy && typeof state.economy[nodeId] === 'number') return state.economy[nodeId];
-    if (state.population && typeof state.population[nodeId] === 'number') return state.population[nodeId];
-    if (state.politics && typeof state.politics[nodeId] === 'number') return state.politics[nodeId];
-    return null;
+    const node = nodeRegistryById.get(nodeId);
+    if (!node) return null;
+    const value = getValueAtPath(state, node.storagePath);
+    return (typeof value === 'number' && Number.isFinite(value)) ? value : null;
 }
 
 function buildNodeConfigsFromState(state) {
+    ensureNodeRegistryReady();
     const nextConfigs = {};
     const anchoredBaseValues = state?.simulationConfig?.baseValues || {};
-    Object.entries(SIMULATED_NODE_DEFAULTS).forEach(([nodeId, defaults]) => {
+    Object.entries(metricNodeDefaults).forEach(([nodeId, defaults]) => {
         const anchored = anchoredBaseValues[nodeId];
         const raw = getStateValueByNodeId(state, nodeId);
         const baseValue = Number.isFinite(anchored)
@@ -448,9 +963,11 @@ function ensureSimulationState(state) {
 
 function getNormalizedValueByNodeId(state, nodeId, nodeSnapshot) {
     const sourceValue = getStateValueByNodeId(state, nodeId);
+    const nodeRow = nodeRegistryById.get(nodeId);
 
-    if (POLICY_NODE_IDS.includes(nodeId)) {
-        return clamp01((sourceValue ?? 0) / 100);
+    if (policyNodeIdSet.has(nodeId)) {
+        if (!nodeRow || !Number.isFinite(sourceValue)) return 0;
+        return normalizeWithRange(sourceValue, nodeRow.min, nodeRow.max);
     }
 
     if (nodeSnapshot && nodeSnapshot[nodeId]) {
@@ -464,6 +981,10 @@ function getNormalizedValueByNodeId(state, nodeId, nodeSnapshot) {
     const cfg = nodeConfigs[nodeId];
     if (cfg && Number.isFinite(sourceValue)) {
         return normalizeWithRange(sourceValue, cfg.min, cfg.max);
+    }
+
+    if (nodeRow && nodeRow.nodeType === 'metric' && Number.isFinite(sourceValue)) {
+        return normalizeWithRange(sourceValue, nodeRow.min, nodeRow.max);
     }
 
     return 0;
@@ -522,23 +1043,9 @@ function syncStateFromSimulation(state, previousGdpNorm) {
     Object.entries(nodeConfigs).forEach(([nodeId, cfg]) => {
         const normValue = state.simulation.nodes[nodeId]?.current ?? cfg.baseValue;
         const rawValue = denormalizeWithRange(normValue, cfg.min, cfg.max);
-
-        if (state.economy && Object.prototype.hasOwnProperty.call(state.economy, nodeId)) {
-            state.economy[nodeId] = INTEGER_ECONOMY_NODES.has(nodeId)
-                ? Math.round(rawValue)
-                : Math.round(rawValue * 10) / 10;
-            return;
-        }
-
-        if (state.population && Object.prototype.hasOwnProperty.call(state.population, nodeId)) {
-            state.population[nodeId] = LEGACY_POPULATION_INTEGER_NODES.has(nodeId)
-                ? Math.round(rawValue)
-                : Math.round(rawValue * 10) / 10;
-            return;
-        }
-
-        if (state.politics && Object.prototype.hasOwnProperty.call(state.politics, nodeId)) {
-            state.politics[nodeId] = Math.round(rawValue * 10) / 10;
+        const row = nodeRegistryById.get(nodeId);
+        if (row) {
+            setValueAtPath(state, row.storagePath, rawValue);
         }
     });
 
@@ -609,29 +1116,34 @@ function getCurrentGraphLinks(state) {
     });
 }
 
-function getPolicyPercent(state, policyId) {
-    const rawValue = getStateValueByNodeId(state, policyId);
-    return clamp(typeof rawValue === 'number' ? rawValue : 0, 0, 100);
+function getPolicyIntensity(state, policyRow) {
+    const rawValue = getStateValueByNodeId(state, policyRow.policyId);
+    if (!Number.isFinite(rawValue)) return 0;
+    if (!Number.isFinite(policyRow.min) || !Number.isFinite(policyRow.max) || policyRow.max <= policyRow.min) return 0;
+    return clamp01((rawValue - policyRow.min) / (policyRow.max - policyRow.min));
 }
 
 function getBudgetScaleFactor(state) {
-    const model = state?.budgetModel || {};
-    const fallbackGdp = Math.max(1, state?.economy?.gdp || 1);
-    const referenceGdp = Number(model.referenceGdp) > 0 ? Number(model.referenceGdp) : fallbackGdp;
-    const currentGdp = Math.max(1, state?.economy?.gdp || referenceGdp);
+    const currentGdp = Math.max(1, Number(state?.economy?.gdp) || 1);
+    const gdpNodeRow = nodeRegistryById.get('gdp');
+    const referenceGdp = Number(gdpNodeRow?.initialValue) > 0
+        ? Number(gdpNodeRow.initialValue)
+        : currentGdp;
     return currentGdp / referenceGdp;
 }
 
-function computeBudgetEntries(state, entries, valueKey) {
+function computeBudgetEntries(state) {
     const scaleFactor = getBudgetScaleFactor(state);
-    return Object.entries(entries || {}).map(([policyId, entry]) => {
-        const pct = getPolicyPercent(state, policyId) / 100;
-        const baseValue = Number(entry?.[valueKey]) || 0;
-        const scale = entry?.gdpScaled === false ? 1 : scaleFactor;
-        const value = pct * baseValue * scale;
+    return policyFiscalRows.map((row) => {
+        const intensity = getPolicyIntensity(state, row);
+        const scale = row.gdpScaled ? scaleFactor : 1;
+        const costValue = (row.baseCost + (row.costSlope * intensity)) * scale;
+        const revenueValue = (row.baseRevenue + (row.revenueSlope * intensity)) * scale;
         return {
-            policyId,
-            value
+            policyId: row.policyId,
+            costValue: Number.isFinite(costValue) ? costValue : 0,
+            revenueValue: Number.isFinite(revenueValue) ? revenueValue : 0,
+            revenueChannel: row.revenueChannel || 'none'
         };
     });
 }
@@ -669,80 +1181,102 @@ function formatBudgetPolicyLabel(policyId) {
 }
 
 function buildBudgetBreakdown(entries, total) {
-    const roundedTotal = Math.round(total);
     const filtered = entries
         .filter((item) => item.value > 0)
         .map((item) => ({
             policyId: item.policyId,
             label: formatBudgetPolicyLabel(item.policyId),
-            value: Math.round(item.value)
+            value: item.value
         }))
         .sort((a, b) => b.value - a.value)
         .map((item) => ({
             ...item,
-            percent: roundedTotal > 0 ? (item.value / roundedTotal) * 100 : 0
+            percent: total > 0 ? (item.value / total) * 100 : 0
         }));
     return {
-        total: roundedTotal,
+        total,
         slices: filtered
     };
 }
 
 // Calculate annualized budget arithmetic and realize only monthly debt accumulation.
 function calculateBudget(state) {
-    const model = state?.budgetModel || {};
-    const revenues = model.revenues || {};
-    const costs = model.costs || {};
-    const annualIncomeEntries = computeBudgetEntries(state, revenues, 'baseRevenue');
-    const annualExpenditureEntries = computeBudgetEntries(state, costs, 'baseCost');
-    const annualIncome = annualIncomeEntries.reduce((sum, item) => sum + item.value, 0);
-    const annualExpenditure = annualExpenditureEntries.reduce((sum, item) => sum + item.value, 0);
+    ensureNodeRegistryReady();
+    const entries = computeBudgetEntries(state);
+    const annualTaxIncome = entries
+        .filter((item) => item.revenueChannel === 'tax')
+        .reduce((sum, item) => sum + item.revenueValue, 0);
+    const annualNonTaxIncome = entries
+        .filter((item) => item.revenueChannel === 'non_tax')
+        .reduce((sum, item) => sum + item.revenueValue, 0);
+    const annualIncome = annualTaxIncome + annualNonTaxIncome;
+    const annualExpenditure = entries.reduce((sum, item) => sum + item.costValue, 0);
 
     const annualDeficit = annualExpenditure - annualIncome;
     const monthlyDeficit = annualDeficit / 12;
-    const nextDebt = Math.max(0, state.economy.debt + monthlyDeficit);
+    const currentDebt = Math.max(0, Number(state?.budget?.debt) || 0);
+    const nextDebt = Math.max(0, currentDebt + monthlyDeficit);
 
     return {
-        income: Math.round(annualIncome),
-        expenditure: Math.round(annualExpenditure),
-        deficit: Math.round(annualDeficit),
-        debt: Math.round(nextDebt)
+        income: annualIncome,
+        expenditure: annualExpenditure,
+        deficit: annualDeficit,
+        debt: nextDebt
     };
 }
 
+function recomputeDerivedEconomyMetrics(state) {
+    if (!state?.economy) return;
+    const debtValue = getStateValueByNodeId(state, 'budget.debt');
+    const gdpValue = getStateValueByNodeId(state, 'gdp');
+    const safeDebt = Number.isFinite(debtValue) ? debtValue : 0;
+    const safeGdp = Number.isFinite(gdpValue) && gdpValue > 0 ? gdpValue : 0;
+    const debtToGdp = safeGdp > 0 ? (safeDebt / safeGdp) * 100 : 0;
+    state.economy.debt_to_gdp = Number.isFinite(debtToGdp) ? debtToGdp : 0;
+}
+
 function calculateBudgetBreakdown(state) {
-    const model = state?.budgetModel || {};
-    const revenueEntries = computeBudgetEntries(state, model.revenues || {}, 'baseRevenue');
-    const costEntries = computeBudgetEntries(state, model.costs || {}, 'baseCost');
-    const annualIncome = revenueEntries.reduce((sum, item) => sum + item.value, 0);
-    const annualExpenditure = costEntries.reduce((sum, item) => sum + item.value, 0);
+    ensureNodeRegistryReady();
+    const entries = computeBudgetEntries(state);
+    const revenueEntries = entries
+        .filter((item) => item.revenueValue > 0)
+        .map((item) => ({ policyId: item.policyId, value: item.revenueValue }));
+    const costEntries = entries
+        .filter((item) => item.costValue > 0)
+        .map((item) => ({ policyId: item.policyId, value: item.costValue }));
+    const fallbackIncome = revenueEntries.reduce((sum, item) => sum + item.value, 0);
+    const fallbackExpenditure = costEntries.reduce((sum, item) => sum + item.value, 0);
+    const incomeTotalNode = getStateValueByNodeId(state, 'budget.income');
+    const expenditureTotalNode = getStateValueByNodeId(state, 'budget.expenditure');
+    const incomeTotal = Number.isFinite(incomeTotalNode) ? incomeTotalNode : fallbackIncome;
+    const expenditureTotal = Number.isFinite(expenditureTotalNode) ? expenditureTotalNode : fallbackExpenditure;
 
     return {
-        income: buildBudgetBreakdown(revenueEntries, annualIncome),
-        expenditure: buildBudgetBreakdown(costEntries, annualExpenditure)
+        income: buildBudgetBreakdown(revenueEntries, incomeTotal),
+        expenditure: buildBudgetBreakdown(costEntries, expenditureTotal)
     };
 }
 
 function calculatePopulationMetrics(state) {
     const projected = projectOneStepRawMetrics(state);
     return {
-        happiness: Math.round(projected.happiness),
-        health: Math.round(projected.health),
-        education: Math.round(projected.education),
-        safety: Math.round(projected.safety),
-        youthIndependence: Math.round(projected.youthIndependence),
-        rentBurden: Math.round(projected.rentBurden)
+        happiness: projected.happiness,
+        health: projected.health,
+        education: projected.education,
+        safety: projected.safety,
+        youthIndependence: projected.youthIndependence,
+        rentBurden: projected.rentBurden
     };
 }
 
 function calculateEconomicIndicators(state) {
     const projected = projectOneStepRawMetrics(state);
     return {
-        gdp: Math.round(projected.gdp),
-        debt: Math.round(state.economy.debt),
+        gdp: projected.gdp,
+        debt: state.budget.debt,
         gdpGrowth: projected.gdpGrowth,
-        unemployment_rate: Math.round(projected.unemployment_rate * 10) / 10,
-        inflation_consumer_prices: Math.round(projected.inflation_consumer_prices * 10) / 10
+        unemployment_rate: projected.unemployment_rate,
+        inflation_consumer_prices: projected.inflation_consumer_prices
     };
 }
 
@@ -774,8 +1308,8 @@ function calculatePoliticalMetrics(state) {
     stability = clamp(stability, 0, 100);
 
     return {
-        approval: Math.round(approval),
-        stability: Math.round(stability)
+        approval,
+        stability
     };
 }
 

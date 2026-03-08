@@ -9,12 +9,6 @@ document.addEventListener('DOMContentLoaded', function() {
 async function initializeGame() {
     // Set up event listeners
     setupEventListeners();
-    
-    // Initialize game state
-    if (typeof initializeGameState === 'function') {
-        initializeGameState();
-    }
-
     await initializeRelationshipsAndStartGate();
     
     console.log('Game initialized successfully');
@@ -26,7 +20,7 @@ function setStartButtonState(mode) {
 
     if (mode === 'loading') {
         startBtn.disabled = true;
-        startBtn.textContent = 'Loading relationships...';
+        startBtn.textContent = 'Loading registries...';
         return;
     }
 
@@ -45,17 +39,25 @@ function setStartButtonState(mode) {
 }
 
 async function initializeRelationshipsAndStartGate() {
-    if (typeof loadRelationshipsCsv !== 'function') {
+    if (
+        typeof loadPoliciesCsv !== 'function'
+        || typeof loadMetricsCsv !== 'function'
+        || typeof loadRelationshipsCsv !== 'function'
+        || typeof initializeGameState !== 'function'
+    ) {
         setStartButtonState('error');
         return;
     }
 
     setStartButtonState('loading');
     try {
+        await loadPoliciesCsv();
+        await loadMetricsCsv();
+        initializeGameState();
         await loadRelationshipsCsv();
         setStartButtonState('ready');
     } catch (error) {
-        console.error('Failed to load relationships CSV:', error);
+        console.error('Failed to load startup CSV registries:', error);
         setStartButtonState('error');
     }
 }
@@ -117,6 +119,13 @@ function setupEventListeners() {
 }
 
 function startGame() {
+    if (typeof isNodeRegistryDataReady === 'function' && !isNodeRegistryDataReady()) {
+        if (typeof nodeRegistryLoadState !== 'undefined' && nodeRegistryLoadState.error) {
+            initializeRelationshipsAndStartGate();
+        }
+        return;
+    }
+
     if (typeof isRelationshipDataReady === 'function' && !isRelationshipDataReady()) {
         if (typeof relationshipLoadState !== 'undefined' && relationshipLoadState.error) {
             initializeRelationshipsAndStartGate();
@@ -165,12 +174,16 @@ function updateSliderValue() {
     const valueDisplay = document.getElementById('slider-value');
     
     if (slider && valueDisplay) {
-        valueDisplay.textContent = slider.value + '%';
+        const numericValue = Number(slider.value);
+        const valueUnit = slider.dataset.valueUnit || 'percent';
+        valueDisplay.textContent = (typeof formatNodeValueByUnit === 'function')
+            ? formatNodeValueByUnit(numericValue, valueUnit)
+            : String(slider.value);
         
         // Show real-time preview of changes
         const policyId = slider.dataset.policyId;
         if (policyId && typeof previewPolicyChange === 'function') {
-            previewPolicyChange(policyId, parseInt(slider.value));
+            previewPolicyChange(policyId, numericValue);
         }
     }
 }
@@ -181,9 +194,10 @@ function applyPolicyChange() {
     
     if (slider && modalTitle) {
         const policyId = slider.dataset.policyId || modalTitle.dataset.policyId;
-        const value = parseInt(slider.value);
+        const value = Number(slider.value);
+        const valueUnit = slider.dataset.valueUnit || 'percent';
         
-        console.log(`Applying policy change: ${policyId} = ${value}%`);
+        console.log(`Applying policy change: ${policyId} = ${value} (${valueUnit})`);
         
         // Update the game state
         if (typeof updatePolicyValue === 'function') {

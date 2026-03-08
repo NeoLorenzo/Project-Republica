@@ -1,26 +1,44 @@
 # Node Model
 
+Authoritative runtime registries:
+- `engine/policies.csv`
+- `engine/metrics.csv`
+
 ## Node Taxonomy
 ### Policy Nodes (Exogenous)
 - Player-controlled policy levers.
-- Stored under `state.policies`.
+- Stored via `policies.csv` `storage_path` entries under `state.policies.*`.
 - Treated as external inputs to the simulation.
+- Include fiscal coefficients (`base_cost`, `cost_slope`, `base_revenue`, `revenue_slope`, `gdp_scaled`).
 
 Examples:
 - `incomeTax`, `corporateTax`, `vat`
-- `healthcareSpending`, `educationSpending`, `welfareSpending`
-- `housingPolicy.*`, `laborPolicy.*`, `taxPolicy.*`
+- `public_expenditure_on_health`, `public_expenditure_on_education`, `welfareSpending`
+- `military_expenditure`, `nominal_minimum_wage`, `housingPolicy.*`, `laborPolicy.*`, `taxPolicy.*`
 
-### Simulation Nodes (Endogenous)
+### Simulation Metric Nodes (Endogenous)
 - Tracked under `state.simulation.nodes` with normalized values.
 - Synced into `state.economy`, `state.population`, `state.politics`.
 - Evolve via inbound approved edges + inertia.
+- Metrics are immutable to the player.
+
+### Deterministic/Read-Only Metric Nodes (Non-Simulated)
+- Defined in `metrics.csv` with `simulation_enabled=no`.
+- Still immutable to the player and can be graph-visible.
+- Not updated by weighted/inertial simulation propagation.
+- Updated by deterministic arithmetic/derived logic where applicable.
+
+Examples:
+- Budget accounting nodes: `budget.income`, `budget.expenditure`, `budget.deficit`, `budget.debt`
+- Derived ratio node: `debt_to_gdp`
+- Registry-owned state metric: `population.total`
 
 ## Normalization Model
-- Each simulation node has `min`, `max`, `k`, `modifierRange`.
+- Each simulation metric node has `min`, `max`, `k`, `modifier_range` from `metrics.csv`.
 - Raw value <-> normalized value transforms:
   - normalize: `(raw - min) / (max - min)` clamped to `[0,1]`
   - denormalize: `min + normalized * (max - min)`
+- For graph link effectiveness, metric normalization can also use registry `min/max` for non-simulated metrics when values are finite.
 
 ## Inertia Behavior
 - A node computes a target from inbound weighted impacts.
@@ -28,9 +46,9 @@ Examples:
 - Effective inertia is weighted by inbound edge magnitudes.
 
 ## Rounding and Storage
-- Certain economy nodes are integers (for example `gdp`, `nominal_minimum_wage`).
-- Legacy population headline nodes are integer-rounded.
-- Most other synced values are rounded to 1 decimal place.
+- Simulation and storage keep raw numeric precision.
+- Rounding is display-only in UI formatters.
+- Node metadata (`storage_path`, display metadata, mutability/type semantics) is sourced from `policies.csv` and `metrics.csv`.
 - Official mapping details live in `engine/calibration_targets_template.csv` columns:
   - `storage_path`
   - `rounding_rule`

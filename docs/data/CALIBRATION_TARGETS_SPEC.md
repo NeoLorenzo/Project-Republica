@@ -29,7 +29,7 @@ Defines real-world calibration targets and mapping metadata in a single table.
 
 ## Constraints
 - `metric_id` must be unique
-- `node_id` must resolve to a known simulation metric node
+- `node_id` must resolve to a known registry node ID (`policies.csv` or `metrics.csv`)
 - `min_bound <= locked_value <= max_bound`
 - `weight >= 0`
 - `tolerance > 0`

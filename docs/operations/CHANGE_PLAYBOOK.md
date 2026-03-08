@@ -13,6 +13,7 @@ Use this sequence for safe model changes.
 - Draft with `status=in_review`.
 - Approve only after causal and evidence checks pass.
 - Runtime should remain unaffected by in-review rows.
+- If change touches accounting edge sets, verify deterministic calculator parity (do not move arithmetic authority to weighted propagation unless explicitly redesigning engine contracts).
 
 ## Data Change Guidance
 - Update source and notes for modified calibration targets.

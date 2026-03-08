@@ -25,8 +25,9 @@ function processNextTurn() {
     const newBudget = calculateBudget(state);
     const newPoliticalMetrics = calculatePoliticalMetrics(state);
     state.budget = newBudget;
-    state.economy.deficit = newBudget.deficit;
-    state.economy.debt = newBudget.debt;
+    if (typeof recomputeDerivedEconomyMetrics === 'function') {
+        recomputeDerivedEconomyMetrics(state);
+    }
     state.politics = { ...state.politics, ...newPoliticalMetrics };
     
     // Advance turn
@@ -68,7 +69,7 @@ function getPerformanceIndicators(state) {
             gdpGrowth: (state.economy.gdpGrowth * 100).toFixed(1) + '%',
             unemployment_rate: state.economy.unemployment_rate.toFixed(1) + '%',
             inflation_consumer_prices: state.economy.inflation_consumer_prices.toFixed(1) + '%',
-            debtRatio: ((state.economy.debt / state.economy.gdp) * 100).toFixed(1) + '%'
+            debtRatio: ((state.budget.debt / state.economy.gdp) * 100).toFixed(1) + '%'
         },
         population: {
             happiness: state.population.happiness + '%',

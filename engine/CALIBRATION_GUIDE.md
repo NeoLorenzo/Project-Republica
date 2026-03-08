@@ -53,7 +53,6 @@ Current columns and purpose:
 Supporting files:
 - `engine/calibration_targets_template.csv` now also carries mapping metadata (`node_id`, `storage_path`, cadence/rounding fields)
 - `engine/relationships.csv` (active graph edges and governance source of truth; runtime filters to `status=approved`)
-- `engine/archive/edge_intake_legacy.csv` (historical snapshot only)
 
 ---
 
@@ -64,8 +63,8 @@ Use this order so attribution stays clean.
 Tune node base anchors so turn-0 matches target values.
 
 What to tune:
-- `simulationConfig.baseValues` (normalized anchors)
-- optionally initial state values in `state.js` if source-of-truth mismatch exists
+- registry `initial_value` in `policies.csv` / `metrics.csv` for node-level starting values
+- optionally `simulationConfig.baseValues` for simulation-enabled metric anchors
 
 What not to tune yet:
 - edge weights/inertia

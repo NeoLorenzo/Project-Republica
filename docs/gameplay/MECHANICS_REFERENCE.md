@@ -7,25 +7,16 @@
 
 ## Player Control vs Simulation Control
 - Player directly controls policy nodes (`state.policies`).
-- Simulation controls endogenous outcome nodes via approved relationships and inertia.
+- Simulation updates simulation-enabled metric nodes via approved relationships and inertia.
+- Deterministic accounting/derived metrics (for example budget nodes and `debt_to_gdp`) are computed by arithmetic helpers, not weighted edge propagation.
 
 ## Action Points
 - Default: 3 action points per turn.
 - Reset each turn after processing.
 
-## Win / Lose Conditions (Current Project Rules)
-### Victory
-- approval > 80
-- gdp growth > 3%
-- happiness > 75
-- minimum 20 turns played
-
-### Game Over
-- debt > 200% of GDP
-- stability < 20
-- happiness < 20
-- inflation > 15
-- unemployment > 20
+## Win / Lose Conditions
+- No enforced runtime win/lose gate is currently documented in engine turn logic.
+- UI includes `renderGameOver(...)` support, but threshold policy should be treated as a separate design contract until explicitly wired.
 
 ## Turn Progression
 - Starts January 2024
@@ -34,3 +25,4 @@
 
 ## Relationship Runtime Rule
 - Only approved edges from `engine/relationships.csv` are active.
+- Budget accounting required edges are validated fail-fast, while budget arithmetic remains deterministic in `calculateBudget()`.
