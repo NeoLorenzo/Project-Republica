@@ -23,6 +23,7 @@ Examples:
 - Budget accounting nodes: `budget.income`, `budget.expenditure`, `budget.deficit`, `budget.debt`
 - GDP identity nodes: `gdp`, `government_demand`
 - Derived ratio: `debt_to_gdp`
+- Population stock-flow nodes: `births_annual`, `deaths_annual`, `migration_in_annual`, `migration_out_annual`, `population_change_annual`, `population.total`
 
 ## GDP Ownership Contract
 GDP is deterministic and identity-owned:

@@ -8,7 +8,7 @@
 ## Player Control vs Simulation Control
 - Player directly controls policy nodes (`state.policies`).
 - Simulation updates simulation-enabled metric nodes via approved relationships and inertia.
-- Deterministic accounting/derived metrics (for example budget nodes, `government_demand`, `gdp`, and `debt_to_gdp`) are computed by arithmetic helpers, not behavioral edge propagation.
+- Deterministic accounting/derived metrics (for example budget nodes, `government_demand`, `gdp`, `debt_to_gdp`, and population stock-flow nodes such as `births_annual` and `population.total`) are computed by arithmetic helpers, not behavioral edge propagation.
 
 ## Win / Lose Conditions
 - No enforced runtime win/lose gate is currently documented in engine turn logic.

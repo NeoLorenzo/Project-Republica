@@ -44,7 +44,7 @@ const portugalState = {
 
     // Population metrics - Portugal specific
     population: {
-        total: 10300000, // 10.3 million
+        total: 10639726, // 10.64 million (INE 2023 resident estimate, baseline Jan 2024)
         happiness: 58, // Lower due to economic pressures
         health: 65, // Strained by SNS issues
         education: 62, // Affected by teacher strikes
@@ -53,11 +53,11 @@ const portugalState = {
         rentBurden: 45, // High rent burden on households
 
         // Calibration metrics (population/social)
-        infant_mortality_rate: 3.0,
-        life_expectancy_at_birth: 81.5,
+        infant_mortality_rate: 2.5,
+        life_expectancy_at_birth: 81.17,
         intentional_homicide_rate: 0.72,
         adult_literacy_rate: 96.1,
-        total_fertility_rate: 1.4,
+        total_fertility_rate: 1.44,
         poverty_headcount_ratio: 0.4,
         maternal_mortality_ratio: 8.0,
         population_density: 116.6,
@@ -66,7 +66,7 @@ const portugalState = {
         mean_years_of_schooling: 9.6,
         urban_population: 67.0,
         median_age: 47.0,
-        net_migration_rate: 13.4,
+        net_migration_rate: 14.7,
         suicide_mortality_rate: 9.0,
         physicians_per_1000_people: 5.5,
         mobile_cellular_subscriptions: 130.0,
@@ -75,7 +75,43 @@ const portugalState = {
         home_ownership_rate: 70.0,
         tertiary_education_attainment: 35.0,
         adult_obesity_rate: 20.8,
-        fixed_broadband_subscriptions: 42.0
+        fixed_broadband_subscriptions: 42.0,
+
+        // Deterministic population stock-flow detail (annualized baseline)
+        fertility_to_birth_rate_factor: 5.625,
+        crude_birth_rate_per_1000: 8.1,
+        crude_death_rate_per_1000: 11.12,
+        immigration_rate_per_1000: 17.8,
+        emigration_rate_per_1000: 3.16,
+        births_annual: 85699,
+        deaths_annual: 118295,
+        migration_in_annual: 189367,
+        migration_out_annual: 33666,
+        natural_change_annual: -32596,
+        net_migration_annual: 155701,
+        population_change_annual: 123105,
+
+        // Deterministic mortality tree
+        stroke_mortality_rate_per_100k: 86.25,
+        ischemic_heart_disease_mortality_rate_per_100k: 60.28,
+        acute_myocardial_infarction_mortality_rate_per_100k: 34.44,
+        respiratory_mortality_rate_per_100k: 123.22,
+        lung_cancer_mortality_rate_per_100k: 42.2,
+        colorectal_cancer_mortality_rate_per_100k: 34.2,
+        covid_mortality_rate_per_100k: 23.83,
+        other_mortality_rate_per_100k: 692.18,
+        deaths_stroke_annual: 9177,
+        deaths_ischemic_heart_disease_annual: 6414,
+        deaths_acute_myocardial_infarction_annual: 3664,
+        deaths_cardiovascular_annual: 19255,
+        deaths_respiratory_annual: 13110,
+        deaths_lung_cancer_annual: 4490,
+        deaths_colorectal_cancer_annual: 3639,
+        deaths_covid_annual: 2535,
+        deaths_traffic_annual: 585,
+        deaths_suicide_annual: 958,
+        deaths_homicide_annual: 77,
+        deaths_other_annual: 73646
     },
 
     // Game state - Starting January 2024
@@ -186,6 +222,9 @@ function initializeGameState() {
     seedNodeInitialValuesFromRegistry(window.gameState);
     if (typeof recomputeDerivedEconomyMetrics === 'function') {
         recomputeDerivedEconomyMetrics(window.gameState);
+    }
+    if (typeof recomputeDerivedPopulationMetrics === 'function') {
+        recomputeDerivedPopulationMetrics(window.gameState);
     }
     if (typeof initializeSimulationNodes === 'function') {
         initializeSimulationNodes(window.gameState);

@@ -1444,8 +1444,26 @@ function getCurrentGraphLinks(state) {
         const runtimeEdge = edgeByDriver.get(link.driver);
         const edge = runtimeEdge || link;
         const context = buildEdgeEvaluationContext(state, edge);
-        const effectiveImpact = evaluateEdgeContribution(edge, context, { forSimulation: false });
-        const effectiveMagnitude = Math.abs(effectiveImpact);
+        const edgeMode = link.edgeMode || edge.edgeMode || EDGE_MODE_BEHAVIORAL;
+        const evaluatedImpact = evaluateEdgeContribution(edge, context, { forSimulation: false });
+        let effectiveImpact = evaluatedImpact;
+        let effectiveMagnitude = Math.abs(evaluatedImpact);
+
+        if (edgeMode === EDGE_MODE_ACCOUNTING) {
+            // Accounting links are deterministic trace edges; cap their visual magnitude so
+            // large raw values (e.g., population stock) do not overwhelm graph layout.
+            const hintMagnitude = Number.isFinite(edge.inertiaWeight) ? edge.inertiaWeight : 0.05;
+            const cappedMagnitude = clamp(hintMagnitude, 0.06, 0.35);
+            const declaredSign = String(link.sign || edge.sign || 'neutral').toLowerCase();
+            let signSeed = 0;
+            if (declaredSign === 'positive') signSeed = 1;
+            if (declaredSign === 'negative') signSeed = -1;
+            if (declaredSign === 'mixed') {
+                signSeed = evaluatedImpact > 0 ? 1 : (evaluatedImpact < 0 ? -1 : 0);
+            }
+            effectiveImpact = signSeed === 0 ? 0 : (cappedMagnitude * signSeed);
+            effectiveMagnitude = cappedMagnitude;
+        }
 
         return {
             ...link,
@@ -1453,7 +1471,7 @@ function getCurrentGraphLinks(state) {
             effectiveImpact,
             evaluatedContribution: effectiveImpact,
             magnitude: effectiveMagnitude,
-            edgeMode: link.edgeMode || edge.edgeMode || EDGE_MODE_BEHAVIORAL,
+            edgeMode,
             equation: link.equation || edge.equation || '',
             sign: link.sign || edge.sign || 'positive',
             polarity: effectiveImpact > 0
@@ -1611,6 +1629,105 @@ function recomputeDerivedEconomyMetrics(state) {
     const safeGdp = Number.isFinite(state.economy.gdp) && state.economy.gdp > 0 ? state.economy.gdp : 0;
     const debtToGdp = safeGdp > 0 ? (safeDebt / safeGdp) * 100 : 0;
     state.economy.debt_to_gdp = Number.isFinite(debtToGdp) ? debtToGdp : 0;
+}
+
+function recomputeDerivedPopulationMetrics(state) {
+    if (!state?.population) return;
+
+    const populationState = state.population;
+    const currentPopulation = Math.max(0, Number(populationState.total) || 0);
+    if (currentPopulation <= 0) return;
+
+    const totalFertilityRate = Math.max(0, Number(populationState.total_fertility_rate) || 0);
+    const fertilityToBirthRateFactor = Math.max(0, Number(populationState.fertility_to_birth_rate_factor) || 0);
+    const crudeBirthRate = totalFertilityRate * fertilityToBirthRateFactor;
+    const birthsAnnualRaw = (currentPopulation * crudeBirthRate) / 1000;
+
+    const immigrationRate = Math.max(0, Number(populationState.immigration_rate_per_1000) || 0);
+    const emigrationRate = Math.max(0, Number(populationState.emigration_rate_per_1000) || 0);
+    const migrationInAnnualRaw = (currentPopulation * immigrationRate) / 1000;
+    const migrationOutAnnualRaw = (currentPopulation * emigrationRate) / 1000;
+
+    const strokeRate = Math.max(0, Number(populationState.stroke_mortality_rate_per_100k) || 0);
+    const ischemicHeartRate = Math.max(0, Number(populationState.ischemic_heart_disease_mortality_rate_per_100k) || 0);
+    const acuteMiRate = Math.max(0, Number(populationState.acute_myocardial_infarction_mortality_rate_per_100k) || 0);
+    const respiratoryRate = Math.max(0, Number(populationState.respiratory_mortality_rate_per_100k) || 0);
+    const lungCancerRate = Math.max(0, Number(populationState.lung_cancer_mortality_rate_per_100k) || 0);
+    const colorectalCancerRate = Math.max(0, Number(populationState.colorectal_cancer_mortality_rate_per_100k) || 0);
+    const covidRate = Math.max(0, Number(populationState.covid_mortality_rate_per_100k) || 0);
+    const trafficRate = Math.max(0, Number(populationState.road_traffic_mortality_rate) || 0);
+    const suicideRate = Math.max(0, Number(populationState.suicide_mortality_rate) || 0);
+    const homicideRate = Math.max(0, Number(populationState.intentional_homicide_rate) || 0);
+    const otherRate = Math.max(0, Number(populationState.other_mortality_rate_per_100k) || 0);
+
+    const deathsStrokeRaw = (currentPopulation * strokeRate) / 100000;
+    const deathsIschemicHeartRaw = (currentPopulation * ischemicHeartRate) / 100000;
+    const deathsAcuteMiRaw = (currentPopulation * acuteMiRate) / 100000;
+    const deathsRespiratoryRaw = (currentPopulation * respiratoryRate) / 100000;
+    const deathsLungCancerRaw = (currentPopulation * lungCancerRate) / 100000;
+    const deathsColorectalCancerRaw = (currentPopulation * colorectalCancerRate) / 100000;
+    const deathsCovidRaw = (currentPopulation * covidRate) / 100000;
+    const deathsTrafficRaw = (currentPopulation * trafficRate) / 100000;
+    const deathsSuicideRaw = (currentPopulation * suicideRate) / 100000;
+    const deathsHomicideRaw = (currentPopulation * homicideRate) / 100000;
+    const deathsOtherRaw = (currentPopulation * otherRate) / 100000;
+
+    const deathsStroke = Math.round(deathsStrokeRaw);
+    const deathsIschemicHeart = Math.round(deathsIschemicHeartRaw);
+    const deathsAcuteMi = Math.round(deathsAcuteMiRaw);
+    const deathsCardiovascular = deathsStroke + deathsIschemicHeart + deathsAcuteMi;
+    const deathsRespiratory = Math.round(deathsRespiratoryRaw);
+    const deathsLungCancer = Math.round(deathsLungCancerRaw);
+    const deathsColorectalCancer = Math.round(deathsColorectalCancerRaw);
+    const deathsCovid = Math.round(deathsCovidRaw);
+    const deathsTraffic = Math.round(deathsTrafficRaw);
+    const deathsSuicide = Math.round(deathsSuicideRaw);
+    const deathsHomicide = Math.round(deathsHomicideRaw);
+    const deathsOther = Math.round(deathsOtherRaw);
+
+    const deathsAnnual = deathsCardiovascular
+        + deathsRespiratory
+        + deathsLungCancer
+        + deathsColorectalCancer
+        + deathsCovid
+        + deathsTraffic
+        + deathsSuicide
+        + deathsHomicide
+        + deathsOther;
+
+    const birthsAnnual = Math.round(birthsAnnualRaw);
+    const migrationInAnnual = Math.round(migrationInAnnualRaw);
+    const migrationOutAnnual = Math.round(migrationOutAnnualRaw);
+    const naturalChangeAnnual = birthsAnnual - deathsAnnual;
+    const netMigrationAnnual = migrationInAnnual - migrationOutAnnual;
+    const populationChangeAnnual = naturalChangeAnnual + netMigrationAnnual;
+    const nextPopulation = Math.max(0, Math.round(currentPopulation + (populationChangeAnnual / 12)));
+    const crudeDeathRate = currentPopulation > 0 ? (deathsAnnual / currentPopulation) * 1000 : 0;
+    const netMigrationRate = currentPopulation > 0 ? (netMigrationAnnual / currentPopulation) * 1000 : 0;
+
+    populationState.crude_birth_rate_per_1000 = crudeBirthRate;
+    populationState.crude_death_rate_per_1000 = crudeDeathRate;
+    populationState.births_annual = birthsAnnual;
+    populationState.deaths_annual = deathsAnnual;
+    populationState.migration_in_annual = migrationInAnnual;
+    populationState.migration_out_annual = migrationOutAnnual;
+    populationState.natural_change_annual = naturalChangeAnnual;
+    populationState.net_migration_annual = netMigrationAnnual;
+    populationState.population_change_annual = populationChangeAnnual;
+    populationState.deaths_stroke_annual = deathsStroke;
+    populationState.deaths_ischemic_heart_disease_annual = deathsIschemicHeart;
+    populationState.deaths_acute_myocardial_infarction_annual = deathsAcuteMi;
+    populationState.deaths_cardiovascular_annual = deathsCardiovascular;
+    populationState.deaths_respiratory_annual = deathsRespiratory;
+    populationState.deaths_lung_cancer_annual = deathsLungCancer;
+    populationState.deaths_colorectal_cancer_annual = deathsColorectalCancer;
+    populationState.deaths_covid_annual = deathsCovid;
+    populationState.deaths_traffic_annual = deathsTraffic;
+    populationState.deaths_suicide_annual = deathsSuicide;
+    populationState.deaths_homicide_annual = deathsHomicide;
+    populationState.deaths_other_annual = deathsOther;
+    populationState.net_migration_rate = netMigrationRate;
+    populationState.total = nextPopulation;
 }
 
 function calculateBudgetBreakdown(state) {

@@ -16,12 +16,18 @@ Execution order:
    - computes `government_demand`
    - computes deterministic GDP identity (`C+I+G+NX`)
    - recomputes `debt_to_gdp`
-5. Turn advancement:
+5. Deterministic population recomputation:
+   - `recomputeDerivedPopulationMetrics(state)`
+   - computes annualized births/deaths/migration flows
+   - computes monthly stock update for `population.total`
+   - recomputes mortality-tree aggregates
+6. Turn advancement:
    - increment month/year counters
 
 ## Why Order Matters
 - Behavioral simulation must run before deterministic recomputation to provide latest C/I/NX values.
 - Budget recomputation must run before derived metrics so government-demand arithmetic uses current fiscal entries.
+- Population recomputation runs after simulation updates so fertility/mortality driver nodes are up to date before stock-flow accounting is applied.
 
 ## Reproducibility Guarantees
 - Same code + same CSVs + same initial state => same no-policy trajectory.

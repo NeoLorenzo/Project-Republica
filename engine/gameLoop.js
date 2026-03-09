@@ -27,6 +27,9 @@ function processNextTurn() {
     if (typeof recomputeDerivedEconomyMetrics === 'function') {
         recomputeDerivedEconomyMetrics(state);
     }
+    if (typeof recomputeDerivedPopulationMetrics === 'function') {
+        recomputeDerivedPopulationMetrics(state);
+    }
     
     // Advance turn
     advanceTurn(state);

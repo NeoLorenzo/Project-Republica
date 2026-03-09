@@ -31,6 +31,8 @@ const defaultPhysicsSettings = {
 // Absolute visual scale for relationship intensity.
 // Using a fixed domain avoids "strongest link always looks identical" artifacts.
 const LINK_VISUAL_MAGNITUDE_MAX = 4.0;
+const ACCOUNTING_EDGE_LAYOUT_MAGNITUDE = 0.08;
+const ACCOUNTING_EDGE_INBOUND_COUNT_WEIGHT = 0.15;
 const EDGE_COLOR_BEHAVIORAL_POSITIVE = '#4ade80';
 const EDGE_COLOR_BEHAVIORAL_NEGATIVE = '#f87171';
 const EDGE_COLOR_ACCOUNTING_POSITIVE = '#60a5fa';
@@ -169,6 +171,11 @@ function getEdgeSign(link) {
 
 function isAccountingEdge(link) {
     return String(link?.edgeMode || '').toLowerCase() === 'accounting_trace';
+}
+
+function getLinkLayoutMagnitude(link) {
+    if (isAccountingEdge(link)) return ACCOUNTING_EDGE_LAYOUT_MAGNITUDE;
+    return Math.max(0.05, Number(link?.magnitude) || 0);
 }
 
 function getEdgeStrokeColor(link) {
@@ -349,8 +356,9 @@ function computeNodeSizingScores(nodes, links) {
         const targetId = getEndpointId(link.target);
         if (!inboundCountMap.has(sourceId) || !inboundCountMap.has(targetId)) return;
 
-        const edgeWeight = Math.max(0.05, Number(link.magnitude) || 0);
-        inboundCountMap.set(targetId, (inboundCountMap.get(targetId) || 0) + 1);
+        const edgeWeight = getLinkLayoutMagnitude(link);
+        const countWeight = isAccountingEdge(link) ? ACCOUNTING_EDGE_INBOUND_COUNT_WEIGHT : 1;
+        inboundCountMap.set(targetId, (inboundCountMap.get(targetId) || 0) + countWeight);
         inboundMagnitudeSumMap.set(targetId, (inboundMagnitudeSumMap.get(targetId) || 0) + edgeWeight);
         inboundAdjacency.get(targetId).push({ id: sourceId, weight: edgeWeight });
     });
@@ -464,8 +472,8 @@ function applySimulationForces(nodes, links, width, height, maxMagnitude) {
             'link',
             d3.forceLink(links)
                 .id((d) => d.id)
-                .distance((d) => distanceScale(d.magnitude))
-                .strength((d) => strengthScale(d.magnitude))
+                .distance((d) => distanceScale(getLinkLayoutMagnitude(d)))
+                .strength((d) => strengthScale(getLinkLayoutMagnitude(d)))
         )
         .on('tick', onTick);
 }
@@ -486,7 +494,7 @@ function setGraphPhysicsSettings(nextSettings) {
         : getGraphLinksFromRules()
     ).filter((link) => nodeIds.has(link.source) && nodeIds.has(link.target));
 
-    const maxMagnitude = Math.max(0.01, ...links.map((link) => link.magnitude));
+    const maxMagnitude = Math.max(0.01, ...links.map((link) => getLinkLayoutMagnitude(link)));
     applySimulationForces(nodes, links, forceGraphContext.width, forceGraphContext.height, maxMagnitude);
     forceGraphContext.simulation.alpha(0.65).restart();
 }
@@ -556,7 +564,7 @@ function renderForceGraph(state) {
         node.visualRadius = radiusScale(node.influenceScore);
     });
 
-    const maxMagnitude = Math.max(0.01, ...links.map((link) => link.magnitude));
+    const maxMagnitude = Math.max(0.01, ...links.map((link) => getLinkLayoutMagnitude(link)));
     const thicknessScale = d3.scaleSqrt().domain([0, LINK_VISUAL_MAGNITUDE_MAX]).range([0.9, 7.8]).clamp(true);
 
     forceGraphContext.linkSelection = forceGraphContext.linkLayer
