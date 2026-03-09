@@ -8,48 +8,34 @@ Authoritative runtime registries:
 ### Policy Nodes (Exogenous)
 - Player-controlled policy levers.
 - Stored via `policies.csv` `storage_path` entries under `state.policies.*`.
-- Treated as external inputs to the simulation.
-- Include fiscal coefficients (`base_cost`, `cost_slope`, `base_revenue`, `revenue_slope`, `gdp_scaled`).
-
-Examples:
-- `incomeTax`, `corporateTax`, `vat`
-- `public_expenditure_on_health`, `public_expenditure_on_education`, `welfareSpending`
-- `military_expenditure`, `nominal_minimum_wage`, `housingPolicy.*`, `laborPolicy.*`, `taxPolicy.*`
+- Include fiscal coefficients and `gdp_demand_share` used by deterministic government-demand mapping.
 
 ### Simulation Metric Nodes (Endogenous)
 - Tracked under `state.simulation.nodes` with normalized values.
-- Synced into `state.economy` and `state.population`.
-- Evolve via inbound approved edges + inertia.
-- Metrics are immutable to the player.
+- Updated via inbound behavioral edge contributions plus inertia.
+- Examples include `consumption`, `investment`, `netExports`, labor/inflation/social metrics.
 
-### Deterministic/Read-Only Metric Nodes (Non-Simulated)
+### Deterministic Metric Nodes (Non-Simulated)
 - Defined in `metrics.csv` with `simulation_enabled=no`.
-- Still immutable to the player and can be graph-visible.
-- Not updated by weighted/inertial simulation propagation.
-- Updated by deterministic arithmetic/derived logic where applicable.
+- Updated by deterministic arithmetic.
 
 Examples:
 - Budget accounting nodes: `budget.income`, `budget.expenditure`, `budget.deficit`, `budget.debt`
-- Derived ratio node: `debt_to_gdp`
-- Registry-owned state metric: `population.total`
+- GDP identity nodes: `gdp`, `government_demand`
+- Derived ratio: `debt_to_gdp`
+
+## GDP Ownership Contract
+GDP is deterministic and identity-owned:
+- `gdp = consumption + investment + government_demand + netExports`
+
+Where:
+- `consumption`, `investment`, `netExports` are million-EUR component nodes.
+- `government_demand` is deterministic, computed from policy expenditure entries using `gdp_demand_share`.
 
 ## Normalization Model
-- Each simulation metric node has `min`, `max`, `k`, `modifier_range` from `metrics.csv`.
-- Raw value <-> normalized value transforms:
-  - normalize: `(raw - min) / (max - min)` clamped to `[0,1]`
-  - denormalize: `min + normalized * (max - min)`
-- For graph link effectiveness, metric normalization can also use registry `min/max` for non-simulated metrics when values are finite.
+- Simulation-enabled metric nodes use `min/max` normalization.
+- Deterministic nodes bypass behavioral propagation and are set directly by arithmetic.
 
 ## Inertia Behavior
-- A node computes a target from inbound weighted impacts.
-- Current value moves toward target by `1 / effectiveInertia` per turn.
-- Effective inertia is weighted by inbound edge magnitudes.
-
-## Rounding and Storage
-- Simulation and storage keep raw numeric precision.
-- Rounding is display-only in UI formatters.
-- Node metadata (`storage_path`, display metadata, mutability/type semantics) is sourced from `policies.csv` and `metrics.csv`.
-- Official mapping details live in `engine/calibration_targets_template.csv` columns:
-  - `storage_path`
-  - `rounding_rule`
-  - `inertia_class`
+- Only simulation-enabled nodes use inertia stepping.
+- Effective inertia is scaled by equation-derived inbound magnitude hints.

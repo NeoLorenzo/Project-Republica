@@ -26,10 +26,12 @@ const portugalState = {
         youth_unemployment_rate: 21.2,
         air_pollution_pm25: 8.5,
 
-        // Existing aggregate-demand channels
-        consumption: 65, // aggregate demand component (0-100)
-        investment: 50, // aggregate demand component (0-100)
-        netExports: 45 // aggregate demand component (0-100)
+        // Aggregate-demand components (million EUR) for deterministic GDP identity.
+        consumption: 170000,
+        investment: 62000,
+        netExports: -11000,
+        government_demand: 46000,
+        real_household_disposable_income: 62 // household disposable income capacity (0-100)
     },
 
     // Budget
@@ -145,13 +147,22 @@ const portugalState = {
         taxPolicy: {
             nhrRegime: 40, // Non-habitual resident regime
             wealthTax: 25 // Wealth tax considerations
-        }
+        },
+
+        // Additional tax and non-tax fiscal levers
+        tsu_total_rate: 34.75, // Combined payroll social contribution rate (%)
+        isp_fuel_tax: 50, // Fuel excise proxy (cents/liter)
+        imi_average_rate: 0.35, // Municipal property tax average rate (%)
+        imt_effective_rate: 5, // Property transfer tax effective rate (%)
+        stamp_duty_index: 1, // Stamp duty multiplier index
+        vehicle_tax_index: 1, // Vehicle tax multiplier index
+        sin_tax_index: 1, // Excise tax multiplier index
+        soe_dividend_rate: 50 // SOE profits transferred to budget (%)
     },
 
     // Tier 1 behavioral node base anchors (normalized 0..1).
     simulationConfig: {
         baseValues: {
-            gdp: 0.3625,
             unemployment_rate: 0.26,
             inflation_consumer_prices: 0.23,
             happiness: 0.58,
@@ -160,9 +171,10 @@ const portugalState = {
             safety: 0.78,
             youthIndependence: 0.35,
             rentBurden: 0.45,
-            consumption: 0.65,
-            investment: 0.50,
-            netExports: 0.45
+            consumption: 0.3889,
+            investment: 0.42,
+            netExports: 0.4083,
+            real_household_disposable_income: 0.62
         }
     }
 };
@@ -245,6 +257,15 @@ function seedNodeInitialValuesFromRegistry(state) {
         const applied = setValueAtPath(state, storagePath, initialValue);
         if (!applied) {
             throw new Error(`Cannot seed node "${nodeId}": failed to apply initial value at "${storagePath}".`);
+        }
+
+        // Keep simulation anchors aligned with seeded registry values.
+        if (row.simulationEnabled === true) {
+            const hasRange = Number.isFinite(row.min) && Number.isFinite(row.max) && row.max > row.min;
+            if (hasRange && state.simulationConfig && state.simulationConfig.baseValues) {
+                const normalized = (initialValue - row.min) / (row.max - row.min);
+                state.simulationConfig.baseValues[nodeId] = Math.max(0, Math.min(1, normalized));
+            }
         }
     });
 }

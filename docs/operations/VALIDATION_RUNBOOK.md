@@ -3,64 +3,47 @@
 Use this after edge/data/engine changes.
 
 ## 1. Registry Integrity
-Check node + relationship registry basics:
-- `policies.csv` header/schema valid
-- `metrics.csv` header/schema valid
-- policy IDs unique in `policies.csv`
-- metric IDs unique in `metrics.csv`
+Check:
+- `policies.csv` schema valid, including required `gdp_demand_share` in `[0,1]`
+- `metrics.csv` schema valid
+- policy IDs unique, metric IDs unique
 - no cross-file ID collisions
-- policy storage paths resolve to numeric state fields
-- metric storage paths resolve to numeric state fields
-- policy `ui_order` deterministic
-- metric `ui_order` deterministic
-- policy `revenue_channel` values valid (`tax|non_tax|none`)
-- header/schema valid
-- no duplicate source-target pairs
-- no self-links
-- status values valid
-- legacy non-node accounting targets are absent (`income`, `expenditure`, `deficit`, `debt`)
-- no approved edge targets a policy node
-- required budget accounting edges are present and sign-correct:
-  - cost policies -> `budget.expenditure`
-  - tax policies (`revenue_channel=tax`) -> `tax_revenue`
-  - `tax_revenue -> budget.income` (positive)
-  - `budget.income -> budget.deficit` (negative)
-  - `budget.expenditure -> budget.deficit` (positive)
-  - `budget.deficit -> budget.debt` (positive)
+- storage paths resolve to numeric state fields
+- `relationships.csv` strict schema valid
+- all active rows have `status=approved`
+- no duplicate source-target pairs, no self-links
+- edge modes valid (`behavioral_contribution|accounting_trace`)
+- signs valid (`positive|negative|mixed`)
+- `mixed` appears only on accounting trace edges
+- no active edge targets policy nodes
+- required accounting edge set present/sign-correct/mode-correct
 
 ## 2. Parser Validation
-- `loadPoliciesCsv()` must succeed.
-- `loadMetricsCsv()` must succeed.
-- `loadRelationshipsCsv()` must succeed.
-- Extended schema must enforce status filtering.
-- Legacy 4-column compatibility should still parse.
-- Missing required budget edge must fail with explicit edge ID.
-- Wrong sign on a required budget edge must fail with explicit edge ID.
+- `loadPoliciesCsv()` succeeds
+- `loadMetricsCsv()` succeeds
+- `loadRelationshipsCsv()` succeeds
+- missing/invalid `gdp_demand_share` fails
+- behavioral edge with `sign=mixed` fails
+- missing required GDP identity trace edges fails
 
-## 3. Runtime Smoke (No-Policy)
-Run a deterministic 60-turn no-policy simulation and verify:
+## 3. Runtime Determinism
+Run 60-turn no-policy simulation and verify:
 - no NaN/Infinity
-- run completes without parser/runtime errors
-- budget values are produced by `calculateBudget()` (no weighted-edge budget arithmetic regression)
-- `economy.debt_to_gdp` remains finite and equals `(budget.debt / gdp) * 100` with zero-safe behavior
+- run completes without load/runtime errors
+- GDP identity holds each turn:
+  - `abs(gdp - (consumption + investment + government_demand + netExports)) <= 1e-6`
+- debt ratio consistency:
+  - `debt_to_gdp == (budget.debt / gdp) * 100` (zero-safe)
 
-## 4. Core Stability Check
-For last 12 turns, verify spans near zero for:
-- `gdp`
-- `unemployment_rate`
-- `inflation_consumer_prices`
+## 4. Graph/UI Checks
+- graph loads without crashes
+- GDP has 4 accounting-trace inbound links (`C/I/G/NX`)
+- `government_demand` node renders with value
+- mixed-sign `netExports -> gdp` link polarity follows live evaluated contribution sign when available
 
-## 5. Bounds Safety
-Confirm simulated values remain within configured node bounds.
-
-## 6. Failure Triage Order
-1. Schema/parser issues
-2. Node ID mismatch or invalid edges
-3. Numerical instability (NaN/divergence)
-4. Macro stability regression
-5. Calibration fit drift
-
-## Recommended Artifacts
-- before/after metric table
-- last-12 spans
-- gate pass/fail matrix
+## 5. Failure Triage Order
+1. Schema/parser errors
+2. Missing/invalid required accounting edges
+3. Deterministic identity violations
+4. Numerical instability
+5. Stability drift

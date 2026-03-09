@@ -31,6 +31,10 @@ const defaultPhysicsSettings = {
 // Absolute visual scale for relationship intensity.
 // Using a fixed domain avoids "strongest link always looks identical" artifacts.
 const LINK_VISUAL_MAGNITUDE_MAX = 4.0;
+const EDGE_COLOR_BEHAVIORAL_POSITIVE = '#4ade80';
+const EDGE_COLOR_BEHAVIORAL_NEGATIVE = '#f87171';
+const EDGE_COLOR_ACCOUNTING_POSITIVE = '#60a5fa';
+const EDGE_COLOR_ACCOUNTING_NEGATIVE = '#f59e0b';
 
 const NODE_ICON_BY_ID = {
     incomeTax: '\u{1F4B0}',
@@ -54,6 +58,14 @@ const NODE_ICON_BY_ID = {
     'laborPolicy.youthJobs': '\u{1F9D1}\u200D\u{1F4BC}',
     'taxPolicy.nhrRegime': '\u{1F3D8}\uFE0F',
     'taxPolicy.wealthTax': '\u{1F48E}',
+    tsu_total_rate: '\u{1F9FE}',
+    isp_fuel_tax: '\u26FD',
+    imi_average_rate: '\u{1F3E0}',
+    imt_effective_rate: '\u{1F3E1}',
+    stamp_duty_index: '\u{1F4DC}',
+    vehicle_tax_index: '\u{1F697}',
+    sin_tax_index: '\u{1F6AD}',
+    soe_dividend_rate: '\u{1F3DB}\uFE0F',
     military_expenditure: '\u{1F6E1}\uFE0F',
     gdp: '\u{1F4C8}',
     health: '\u2764\uFE0F',
@@ -65,6 +77,7 @@ const NODE_ICON_BY_ID = {
     consumption: '\u{1F6D2}',
     investment: '\u{1F3D7}\uFE0F',
     netExports: '\u{1F6A2}',
+    government_demand: '\u{1F3DB}\uFE0F',
     rentBurden: '\u{1F3D8}\uFE0F',
     youthIndependence: '\u{1F3E1}',
     average_annual_real_wages: '\u{1F4B6}',
@@ -145,6 +158,41 @@ function getNodeRadius(node) {
     return node.visualRadius || (node.nodeType === 'metric' ? 36 : 42);
 }
 
+function getEdgeSign(link) {
+    const contribution = Number(link?.evaluatedContribution);
+    if (Number.isFinite(contribution) && contribution !== 0) {
+        return contribution > 0 ? 'positive' : 'negative';
+    }
+    const sign = String(link?.sign || link?.polarity || '').toLowerCase();
+    return sign === 'negative' ? 'negative' : (sign === 'positive' ? 'positive' : 'neutral');
+}
+
+function isAccountingEdge(link) {
+    return String(link?.edgeMode || '').toLowerCase() === 'accounting_trace';
+}
+
+function getEdgeStrokeColor(link) {
+    const sign = getEdgeSign(link);
+    if (sign === 'neutral') return '#94a3b8';
+    if (isAccountingEdge(link)) {
+        return sign === 'positive' ? EDGE_COLOR_ACCOUNTING_POSITIVE : EDGE_COLOR_ACCOUNTING_NEGATIVE;
+    }
+    return sign === 'positive' ? EDGE_COLOR_BEHAVIORAL_POSITIVE : EDGE_COLOR_BEHAVIORAL_NEGATIVE;
+}
+
+function getEdgeMarkerId(link) {
+    const sign = getEdgeSign(link);
+    if (sign === 'neutral') return null;
+    if (isAccountingEdge(link)) {
+        return sign === 'positive'
+            ? 'url(#force-arrow-accounting-positive)'
+            : 'url(#force-arrow-accounting-negative)';
+    }
+    return sign === 'positive'
+        ? 'url(#force-arrow-behavioral-positive)'
+        : 'url(#force-arrow-behavioral-negative)';
+}
+
 function initializeForceGraph(containerEl) {
     if (!containerEl || typeof d3 === 'undefined') return;
     if (forceGraphContext.container === containerEl && forceGraphContext.svg) return;
@@ -162,7 +210,7 @@ function initializeForceGraph(containerEl) {
     const defs = forceGraphContext.svg.append('defs');
     defs
         .append('marker')
-        .attr('id', 'force-arrow-positive')
+        .attr('id', 'force-arrow-behavioral-positive')
         .attr('viewBox', '0 0 10 10')
         .attr('refX', 10)
         .attr('refY', 5)
@@ -171,11 +219,11 @@ function initializeForceGraph(containerEl) {
         .attr('orient', 'auto-start-reverse')
         .append('path')
         .attr('d', 'M 0 0 L 10 5 L 0 10 z')
-        .attr('fill', '#4ade80');
+        .attr('fill', EDGE_COLOR_BEHAVIORAL_POSITIVE);
 
     defs
         .append('marker')
-        .attr('id', 'force-arrow-negative')
+        .attr('id', 'force-arrow-behavioral-negative')
         .attr('viewBox', '0 0 10 10')
         .attr('refX', 10)
         .attr('refY', 5)
@@ -184,7 +232,33 @@ function initializeForceGraph(containerEl) {
         .attr('orient', 'auto-start-reverse')
         .append('path')
         .attr('d', 'M 0 0 L 10 5 L 0 10 z')
-        .attr('fill', '#f87171');
+        .attr('fill', EDGE_COLOR_BEHAVIORAL_NEGATIVE);
+
+    defs
+        .append('marker')
+        .attr('id', 'force-arrow-accounting-positive')
+        .attr('viewBox', '0 0 10 10')
+        .attr('refX', 10)
+        .attr('refY', 5)
+        .attr('markerWidth', 5)
+        .attr('markerHeight', 5)
+        .attr('orient', 'auto-start-reverse')
+        .append('path')
+        .attr('d', 'M 0 0 L 10 5 L 0 10 z')
+        .attr('fill', EDGE_COLOR_ACCOUNTING_POSITIVE);
+
+    defs
+        .append('marker')
+        .attr('id', 'force-arrow-accounting-negative')
+        .attr('viewBox', '0 0 10 10')
+        .attr('refX', 10)
+        .attr('refY', 5)
+        .attr('markerWidth', 5)
+        .attr('markerHeight', 5)
+        .attr('orient', 'auto-start-reverse')
+        .append('path')
+        .attr('d', 'M 0 0 L 10 5 L 0 10 z')
+        .attr('fill', EDGE_COLOR_ACCOUNTING_NEGATIVE);
 
     forceGraphContext.linkLayer = forceGraphContext.svg.append('g').attr('class', 'force-links');
     forceGraphContext.nodeLayer = forceGraphContext.svg.append('g').attr('class', 'force-nodes');
@@ -259,39 +333,54 @@ function assignLinkCurvature(links) {
     });
 }
 
-// Node size score combines direct connectivity and neighbor influence (eigenvector-like).
+// Node size score is driven only by inbound edges:
+// - base score
+// - inbound edge count
+// - inbound edge magnitude
+// - slight boost from the sizes of inbound neighbors
 function computeNodeSizingScores(nodes, links) {
     const nodeIds = nodes.map((node) => node.id);
-    const degreeMap = new Map(nodeIds.map((id) => [id, 0]));
-    const adjacency = new Map(nodeIds.map((id) => [id, []]));
+    const inboundCountMap = new Map(nodeIds.map((id) => [id, 0]));
+    const inboundAdjacency = new Map(nodeIds.map((id) => [id, []]));
+    const inboundMagnitudeSumMap = new Map(nodeIds.map((id) => [id, 0]));
 
     links.forEach((link) => {
         const sourceId = getEndpointId(link.source);
         const targetId = getEndpointId(link.target);
-        if (!degreeMap.has(sourceId) || !degreeMap.has(targetId)) return;
+        if (!inboundCountMap.has(sourceId) || !inboundCountMap.has(targetId)) return;
 
-        degreeMap.set(sourceId, (degreeMap.get(sourceId) || 0) + 1);
-        degreeMap.set(targetId, (degreeMap.get(targetId) || 0) + 1);
-
-        const edgeWeight = Math.max(0.05, link.magnitude || Math.abs(link.weight) || 1);
-        adjacency.get(sourceId).push({ id: targetId, weight: edgeWeight });
-        adjacency.get(targetId).push({ id: sourceId, weight: edgeWeight });
+        const edgeWeight = Math.max(0.05, Number(link.magnitude) || 0);
+        inboundCountMap.set(targetId, (inboundCountMap.get(targetId) || 0) + 1);
+        inboundMagnitudeSumMap.set(targetId, (inboundMagnitudeSumMap.get(targetId) || 0) + edgeWeight);
+        inboundAdjacency.get(targetId).push({ id: sourceId, weight: edgeWeight });
     });
 
-    const rawDegrees = nodeIds.map((id) => degreeMap.get(id) || 0);
-    const maxDegree = Math.max(1, ...rawDegrees);
-    const baseScore = new Map(
-        nodeIds.map((id) => [id, ((degreeMap.get(id) || 0) / maxDegree) + 0.1])
-    );
+    const inboundCounts = nodeIds.map((id) => inboundCountMap.get(id) || 0);
+    const inboundMagnitudeSums = nodeIds.map((id) => inboundMagnitudeSumMap.get(id) || 0);
+    const maxInboundCount = Math.max(1, ...inboundCounts);
+    const maxInboundMagnitudeSum = Math.max(0.0001, ...inboundMagnitudeSums);
+
+    const baseScoreFloor = 0.55;
+    const inboundCountWeight = 0.70;
+    const inboundMagnitudeWeight = 0.60;
+
+    const baseScore = new Map(nodeIds.map((id) => {
+        const normalizedInboundCount = (inboundCountMap.get(id) || 0) / maxInboundCount;
+        const normalizedInboundMagnitude = (inboundMagnitudeSumMap.get(id) || 0) / maxInboundMagnitudeSum;
+        const score = baseScoreFloor
+            + (normalizedInboundCount * inboundCountWeight)
+            + (normalizedInboundMagnitude * inboundMagnitudeWeight);
+        return [id, score];
+    }));
 
     const scores = new Map(baseScore);
-    const neighborMix = 0.55;
-    const iterations = 8;
+    const inboundNeighborInfluenceMix = 0.18;
+    const iterations = 6;
 
     for (let i = 0; i < iterations; i++) {
         const nextScores = new Map();
         nodeIds.forEach((id) => {
-            const neighbors = adjacency.get(id) || [];
+            const neighbors = inboundAdjacency.get(id) || [];
             if (!neighbors.length) {
                 nextScores.set(id, baseScore.get(id) || 0.1);
                 return;
@@ -305,13 +394,14 @@ function computeNodeSizingScores(nodes, links) {
             });
 
             const neighborInfluence = totalWeight > 0 ? (weightedSum / totalWeight) : 0;
-            const next = ((baseScore.get(id) || 0.1) * (1 - neighborMix)) + (neighborInfluence * neighborMix);
+            const next = ((baseScore.get(id) || 0.1) * (1 - inboundNeighborInfluenceMix))
+                + (neighborInfluence * inboundNeighborInfluenceMix);
             nextScores.set(id, next);
         });
         nextScores.forEach((value, id) => scores.set(id, value));
     }
 
-    return { degreeMap, scoreMap: scores };
+    return { degreeMap: inboundCountMap, scoreMap: scores };
 }
 
 function getLinkPath(link) {
@@ -475,18 +565,31 @@ function renderForceGraph(state) {
         .join('path')
         .attr('class', 'force-link')
         .attr('fill', 'none')
-        .attr('stroke', (d) => (d.weight > 0 ? '#4ade80' : (d.weight < 0 ? '#f87171' : '#94a3b8')))
+        .attr('data-edge-mode', (d) => d.edgeMode || 'behavioral_contribution')
+        .attr('data-equation', (d) => d.equation || '')
+        .attr('stroke', (d) => getEdgeStrokeColor(d))
         .attr('stroke-width', (d) => thicknessScale(d.magnitude))
         .attr('marker-end', (d) => (
             d.magnitude < 0.001
                 ? null
-                : (d.weight >= 0 ? 'url(#force-arrow-positive)' : 'url(#force-arrow-negative)')
+                : getEdgeMarkerId(d)
         ))
         .attr('stroke-opacity', (d) => (
             d.magnitude < 0.001
                 ? 0
                 : Math.min(0.95, 0.30 + (d.magnitude / LINK_VISUAL_MAGNITUDE_MAX))
         ));
+
+    forceGraphContext.linkSelection
+        .selectAll('title')
+        .data((d) => [d])
+        .join('title')
+        .text((d) => {
+            const mode = d.edgeMode || 'behavioral_contribution';
+            const equation = d.equation || '(none)';
+            const contribution = Number.isFinite(d.evaluatedContribution) ? d.evaluatedContribution.toFixed(4) : 'n/a';
+            return `${d.source} -> ${d.target}\nmode: ${mode}\nequation: ${equation}\ncontribution: ${contribution}`;
+        });
 
     const dragBehavior = d3
         .drag()

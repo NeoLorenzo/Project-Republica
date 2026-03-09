@@ -3,29 +3,34 @@
 Use this sequence for safe model changes.
 
 ## Standard Sequence
-1. Edit `engine/relationships.csv` (or calibration data) with clear rationale.
-2. Run validation runbook checks.
-3. Confirm no-policy stability and finite outputs.
-4. Update docs impacted by the change.
-5. Record rationale in `review_notes` (relationships) and commit message/changelog.
+1. Edit `engine/policies.csv`, `engine/metrics.csv`, and/or `engine/relationships.csv` with clear rationale.
+2. Keep `engine/relationships.csv` approved-only.
+3. Move rejected/historical rows to `engine/relationships_archive.csv`.
+4. Run validation runbook checks.
+5. Confirm deterministic identities and no-policy stability.
+6. Update docs and record rationale in `review_notes`.
+
+## GDP Identity Changes
+When changing GDP mechanics:
+- preserve deterministic ownership (`C+I+G+NX`)
+- update GDP trace edges in `relationships.csv`
+- update policy `gdp_demand_share` values in `policies.csv`
+- revalidate identity tolerance and debt ratio consistency
 
 ## Edge Change Guidance
-- Draft with `status=in_review`.
-- Approve only after causal and evidence checks pass.
-- Runtime should remain unaffected by in-review rows.
-- If change touches accounting edge sets, verify deterministic calculator parity (do not move arithmetic authority to weighted propagation unless explicitly redesigning engine contracts).
-
-## Data Change Guidance
-- Update source and notes for modified calibration targets.
-- Adjust weight/tolerance when data is lagged or uncertain.
+- Behavioral edges must use `positive|negative` signs.
+- `mixed` sign is allowed only for `accounting_trace` edges.
+- Accounting edges are trace/governance links; deterministic calculators remain authoritative.
 
 ## Rollback Strategy
-- Revert status or row edits in `relationships.csv`.
-- Re-run validation to confirm baseline behavior restored.
+- Restore prior snapshots/commit for CSV and rules files.
+- Keep history in `relationships_archive.csv`.
+- Re-run validation to confirm baseline behavior.
 
 ## Release Gate
-Do not ship if any of these fail:
+Do not ship if any fail:
 - parser errors
+- required accounting edge failures
+- GDP identity mismatch
 - NaN/Infinity
-- core last-12 stability regression
 - undocumented contract changes

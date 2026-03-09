@@ -150,6 +150,9 @@ function showMetricTooltip(event, node, state) {
         case 'netExports':
             details = 'Trade balance competitiveness channel';
             break;
+        case 'government_demand':
+            details = 'Deterministic government final demand component';
+            break;
         case 'rentBurden':
             details = 'Household rent pressure index';
             break;

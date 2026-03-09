@@ -8,7 +8,7 @@
 ## Player Control vs Simulation Control
 - Player directly controls policy nodes (`state.policies`).
 - Simulation updates simulation-enabled metric nodes via approved relationships and inertia.
-- Deterministic accounting/derived metrics (for example budget nodes and `debt_to_gdp`) are computed by arithmetic helpers, not weighted edge propagation.
+- Deterministic accounting/derived metrics (for example budget nodes, `government_demand`, `gdp`, and `debt_to_gdp`) are computed by arithmetic helpers, not behavioral edge propagation.
 
 ## Win / Lose Conditions
 - No enforced runtime win/lose gate is currently documented in engine turn logic.
@@ -22,3 +22,4 @@
 ## Relationship Runtime Rule
 - Only approved edges from `engine/relationships.csv` are active.
 - Budget accounting required edges are validated fail-fast, while budget arithmetic remains deterministic in `calculateBudget()`.
+- GDP trace edges are accounting-trace only; deterministic GDP identity is computed in `recomputeDerivedEconomyMetrics()`.

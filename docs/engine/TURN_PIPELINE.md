@@ -6,23 +6,24 @@ Turn processing is orchestrated by `processNextTurn()` in `engine/gameLoop.js`.
 Execution order:
 1. Guard: ensure state exists and relationship data is loaded.
 2. Relationship simulation:
-   - call `stepRelationshipSimulation(state)` from `engine/rules.js`
-   - applies edge impacts, computes targets, applies inertia, syncs to state
+   - call `stepRelationshipSimulation(state)`
+   - evaluates approved behavioral equations
+   - updates simulation-enabled nodes only
 3. Budget recomputation:
-   - `calculateBudget(state)` (deterministic arithmetic authority for budget nodes)
-4. Derived deterministic metric recomputation:
-   - `recomputeDerivedEconomyMetrics(state)` (currently computes `debt_to_gdp`)
+   - `calculateBudget(state)` (deterministic authority for budget nodes)
+4. Derived deterministic recomputation:
+   - `recomputeDerivedEconomyMetrics(state)`
+   - computes `government_demand`
+   - computes deterministic GDP identity (`C+I+G+NX`)
+   - recomputes `debt_to_gdp`
 5. Turn advancement:
    - increment month/year counters
 
 ## Why Order Matters
-- Relationship simulation must run before budget/derived metrics so downstream arithmetic uses latest state.
-- Budget arithmetic must run before derived deterministic metrics (for example `debt_to_gdp`).
-- Reordering changes outputs and invalidates calibration baselines.
+- Behavioral simulation must run before deterministic recomputation to provide latest C/I/NX values.
+- Budget recomputation must run before derived metrics so government-demand arithmetic uses current fiscal entries.
 
 ## Reproducibility Guarantees
-- Same code + same CSV files + same initial state => same no-policy trajectory.
-- Validation runs should always report:
-  - final metric values
-  - last-12-turn spans
-  - finite checks (no NaN/Infinity)
+- Same code + same CSVs + same initial state => same no-policy trajectory.
+- Active relationships come from `engine/relationships.csv` only.
+- `engine/relationships_archive.csv` is non-runtime.

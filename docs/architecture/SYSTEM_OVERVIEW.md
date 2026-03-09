@@ -22,9 +22,11 @@
 6. UI re-renders current state.
 
 ## Computation Model
-- Influence model: approved relationship edges drive simulation-enabled metric updates with weight + inertia.
+- Behavioral contribution model: approved behavioral edges evaluate equations into per-target contributions, then inertia/shaping updates simulation-enabled metric nodes.
 - Deterministic accounting model: precision-critical accounting nodes are calculated by arithmetic helpers, with required edge sets enforced for structural governance.
-- Budget currently uses deterministic arithmetic authority (`calculateBudget`) with fail-fast required-edge validation.
+- Budget uses deterministic arithmetic authority (`calculateBudget`) with fail-fast required-edge validation.
+- GDP uses deterministic identity authority (`recomputeDerivedEconomyMetrics`):
+  - `gdp = consumption + investment + government_demand + netExports`
 
 ## Source-of-Truth Ownership
 - Policy identity/mutability/bounds/initial values/fiscal coefficients: `engine/policies.csv`

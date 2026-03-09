@@ -42,6 +42,7 @@ async function initializeRelationshipsAndStartGate() {
     if (
         typeof loadPoliciesCsv !== 'function'
         || typeof loadMetricsCsv !== 'function'
+        || typeof loadCalibrationTargetsCsv !== 'function'
         || typeof loadRelationshipsCsv !== 'function'
         || typeof initializeGameState !== 'function'
     ) {
@@ -53,6 +54,7 @@ async function initializeRelationshipsAndStartGate() {
     try {
         await loadPoliciesCsv();
         await loadMetricsCsv();
+        await loadCalibrationTargetsCsv();
         initializeGameState();
         await loadRelationshipsCsv();
         setStartButtonState('ready');
