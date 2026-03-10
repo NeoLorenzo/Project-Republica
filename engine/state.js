@@ -1,4 +1,4 @@
-// Portugal initial game state - January 2024
+﻿// Portugal initial game state - January 2024
 // This file contains ONLY the initial variables and data structures
 // NO UI CODE HERE - PURE MATH ONLY
 
@@ -253,6 +253,66 @@ const portugalState = {
         imports_services_ebops_sn_eur_m: 0.000,
         imports_services_other_eur_m: 0.000,
         net_services_trade_eur_m: 29344.000,
+        gdp_consumption_food_and_non_alcoholic_beverages_eur_m: 31374.084,
+        gdp_consumption_food_and_non_CP011_food_eur_m: 29640.579,
+        gdp_consumption_food_and_non_CP012_non_alcoholic_beverages_eur_m: 1733.505,
+        gdp_consumption_alcoholic_beverages_tobacco_narcotics_eur_m: 5642.110,
+        gdp_consumption_alcoholic_bev_CP021_alcoholic_beverages_eur_m: 2370.292,
+        gdp_consumption_alcoholic_bev_CP022_tobacco_eur_m: 3239.525,
+        gdp_consumption_alcoholic_bev_CP023_narcotics_eur_m: 32.293,
+        gdp_consumption_clothing_and_footwear_eur_m: 9425.782,
+        gdp_consumption_clothing_and__CP031_clothing_eur_m: 7485.492,
+        gdp_consumption_clothing_and__CP032_footwear_eur_m: 1940.290,
+        gdp_consumption_housing_water_electricity_gas_eur_m: 31345.176,
+        gdp_consumption_housing_water_CP041_actual_rentals_for_housi_eur_m: 5048.971,
+        gdp_consumption_housing_water_CP042_imputed_rentals_for_hous_eur_m: 16366.529,
+        gdp_consumption_housing_water_CP043_maintenance_and_repair_o_eur_m: 875.023,
+        gdp_consumption_housing_water_CP044_water_supply_and_miscell_eur_m: 3258.118,
+        gdp_consumption_housing_water_CP045_electricity_gas_and_othe_eur_m: 5796.536,
+        gdp_consumption_furnishings_household_equipment_eur_m: 9153.155,
+        gdp_consumption_furnishings_h_CP051_furniture_and_furnishing_eur_m: 2401.761,
+        gdp_consumption_furnishings_h_CP052_household_textiles_eur_m: 565.372,
+        gdp_consumption_furnishings_h_CP053_household_appliances_eur_m: 1567.892,
+        gdp_consumption_furnishings_h_CP054_glassware_tableware_and__eur_m: 570.688,
+        gdp_consumption_furnishings_h_CP055_tools_and_equipment_for__eur_m: 624.598,
+        gdp_consumption_furnishings_h_CP056_goods_and_services_for_r_eur_m: 3422.842,
+        gdp_consumption_health_eur_m: 10206.523,
+        gdp_consumption_health_CP061_medical_products_applian_eur_m: 3692.658,
+        gdp_consumption_health_CP062_outpatient_services_eur_m: 5377.291,
+        gdp_consumption_health_CP063_hospital_services_eur_m: 1136.574,
+        gdp_consumption_transport_eur_m: 21897.592,
+        gdp_consumption_transport_CP071_purchase_of_vehicles_eur_m: 8576.241,
+        gdp_consumption_transport_CP072_operation_of_personal_tr_eur_m: 11417.810,
+        gdp_consumption_transport_CP073_transport_services_eur_m: 1903.541,
+        gdp_consumption_communication_eur_m: 4162.010,
+        gdp_consumption_communication_CP081_postal_services_eur_m: 106.091,
+        gdp_consumption_communication_CP082_telephone_and_telefax_eq_eur_m: 573.075,
+        gdp_consumption_communication_CP083_telephone_and_telefax_se_eur_m: 3482.844,
+        gdp_consumption_recreation_and_culture_eur_m: 9081.705,
+        gdp_consumption_recreation_an_CP091_audio_visual_photographi_eur_m: 1820.730,
+        gdp_consumption_recreation_an_CP092_other_major_durables_for_eur_m: 140.710,
+        gdp_consumption_recreation_an_CP093_other_recreational_items_eur_m: 2476.502,
+        gdp_consumption_recreation_an_CP094_recreational_and_cultura_eur_m: 3345.986,
+        gdp_consumption_recreation_an_CP095_newspapers_books_and_sta_eur_m: 898.889,
+        gdp_consumption_recreation_an_CP096_package_holidays_eur_m: 398.887,
+        gdp_consumption_education_eur_m: 2709.594,
+        gdp_consumption_education_CP101_pre_primary_and_primary__eur_m: 819.539,
+        gdp_consumption_education_CP102_secondary_education_eur_m: 488.241,
+        gdp_consumption_education_CP103_post_secondary_non_terti_eur_m: 40.854,
+        gdp_consumption_education_CP104_tertiary_education_eur_m: 608.204,
+        gdp_consumption_education_CP105_education_not_definable__eur_m: 752.756,
+        gdp_consumption_restaurants_and_hotels_eur_m: 27263.700,
+        gdp_consumption_restaurants_a_CP111_catering_services_eur_m: 22591.956,
+        gdp_consumption_restaurants_a_CP112_accommodation_services_eur_m: 4671.745,
+        gdp_consumption_miscellaneous_goods_and_services_eur_m: 18772.478,
+        gdp_consumption_miscellaneous_CP121_personal_care_eur_m: 5594.120,
+        gdp_consumption_miscellaneous_CP122_prostitution_eur_m: 815.269,
+        gdp_consumption_miscellaneous_CP123_personal_effects_nec_eur_m: 1680.556,
+        gdp_consumption_miscellaneous_CP124_social_protection_eur_m: 2661.939,
+        gdp_consumption_miscellaneous_CP125_insurance_eur_m: 3428.274,
+        gdp_consumption_miscellaneous_CP126_financial_services_nec_eur_m: 3208.665,
+        gdp_consumption_miscellaneous_CP127_other_services_nec_eur_m: 1383.655,
+        gdp_consumption_other_eur_m: -0.109,
         gdp_investment_gfcf_dwellings_eur_m: 11178.700,
         gdp_investment_gfcf_other_structures_eur_m: 18941.500,
         gdp_investment_gfcf_transport_equip_eur_m: 4202.200,
@@ -346,7 +406,7 @@ const portugalState = {
         gdp_gov_exp_other_eur_m: 0.100,
 
         // Aggregate-demand components (million EUR) for deterministic GDP identity.
-        consumption: 170000,
+        consumption: 181033.700,
         investment: 55384.300,
         netExports: 3170,
         government_demand: 113361.700,
@@ -539,7 +599,7 @@ const portugalState = {
             safety: 0.78,
             youthIndependence: 0.35,
             rentBurden: 0.45,
-            consumption: 0.3889,
+            consumption: 181033.700,
             investment: 0.42,
             netExports: 0.4083,
             real_household_disposable_income: 0.62
@@ -688,5 +748,7 @@ function getPolicyValue(policyName) {
     const current = getValueAtPath(window.gameState, node.storagePath);
     return (typeof current === 'number' && Number.isFinite(current)) ? current : null;
 }
+
+
 
 

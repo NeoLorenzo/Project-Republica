@@ -1,0 +1,48 @@
+﻿coicop_code,coicop_name,value_eur_m_2023_est,share_percent,period,source_id,source_url
+CP011,Food,29640.579,16.373,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP012,Non-alcoholic beverages,1733.505,0.958,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP021,Alcoholic beverages,2370.292,1.309,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP022,Tobacco,3239.525,1.789,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP023,Narcotics,32.293,0.018,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP031,Clothing,7485.492,4.135,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP032,Footwear,1940.290,1.072,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP041,Actual rentals for housing,5048.971,2.789,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP042,Imputed rentals for housing,16366.529,9.041,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP043,Maintenance and repair of the dwelling,875.023,0.483,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP044,Water supply and miscellaneous services relating to the dwelling,3258.118,1.800,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP045,"Electricity, gas and other fuels",5796.536,3.202,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP051,"Furniture and furnishings, carpets and other floor coverings",2401.761,1.327,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP052,Household textiles,565.372,0.312,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP053,Household appliances,1567.892,0.866,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP054,"Glassware, tableware and household utensils",570.688,0.315,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP055,Tools and equipment for house and garden,624.598,0.345,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP056,Goods and services for routine household maintenance,3422.842,1.891,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP061,"Medical products, appliances and equipment",3692.658,2.040,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP062,Outpatient services,5377.291,2.970,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP063,Hospital services,1136.574,0.628,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP071,Purchase of vehicles,8576.241,4.737,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP072,Operation of personal transport equipment,11417.810,6.307,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP073,Transport services,1903.541,1.051,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP081,Postal services,106.091,0.059,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP082,Telephone and telefax equipment,573.075,0.317,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP083,Telephone and telefax services,3482.844,1.924,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP091,"Audio-visual, photographic and information processing equipment",1820.730,1.006,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP092,Other major durables for recreation and culture,140.710,0.078,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP093,"Other recreational items and equipment, gardens and pets",2476.502,1.368,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP094,Recreational and cultural services,3345.986,1.848,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP095,"Newspapers, books and stationery",898.889,0.497,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP096,Package holidays,398.887,0.220,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP101,Pre-primary and primary education,819.539,0.453,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP102,Secondary education,488.241,0.270,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP103,Post-secondary non-tertiary education,40.854,0.023,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP104,Tertiary education,608.204,0.336,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP105,Education not definable by level,752.756,0.416,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP111,Catering services,22591.956,12.480,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP112,Accommodation services,4671.745,2.581,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP121,Personal care,5594.120,3.090,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP122,Prostitution,815.269,0.450,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP123,Personal effects n.e.c.,1680.556,0.928,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP124,Social protection,2661.939,1.470,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP125,Insurance,3428.274,1.894,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP126,Financial services n.e.c.,3208.665,1.772,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/
+CP127,Other services n.e.c.,1383.655,0.764,2023 Estimated,SRC_EUROSTAT_NAMA10CO3,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_CO3_P3/

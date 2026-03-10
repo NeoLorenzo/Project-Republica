@@ -44,6 +44,20 @@ const EDGE_MODE_ACCOUNTING = 'accounting_trace';
 const EDGE_MODE_ALLOWED = new Set([EDGE_MODE_BEHAVIORAL, EDGE_MODE_ACCOUNTING]);
 const TRADE_HS_NODE_PATTERN = /^(exports|imports)_goods_hs(\d{2})_eur_m$/;
 const TRADE_SERVICE_EBOPS_NODE_PATTERN = /^(exports|imports)_services_ebops_([a-z]{2})_eur_m$/;
+const CONSUMPTION_DIVISION_COICOP_PREFIX = Object.freeze({
+    gdp_consumption_food_and_non_alcoholic_beverages_eur_m: '01',
+    gdp_consumption_alcoholic_beverages_tobacco_narcotics_eur_m: '02',
+    gdp_consumption_clothing_and_footwear_eur_m: '03',
+    gdp_consumption_housing_water_electricity_gas_eur_m: '04',
+    gdp_consumption_furnishings_household_equipment_eur_m: '05',
+    gdp_consumption_health_eur_m: '06',
+    gdp_consumption_transport_eur_m: '07',
+    gdp_consumption_communication_eur_m: '08',
+    gdp_consumption_recreation_and_culture_eur_m: '09',
+    gdp_consumption_education_eur_m: '10',
+    gdp_consumption_restaurants_and_hotels_eur_m: '11',
+    gdp_consumption_miscellaneous_goods_and_services_eur_m: '12'
+});
 
 function getTradeComponentNodeIds(flowPrefix, otherNodeId) {
     const hsNodes = [...knownNodeIds]
@@ -79,6 +93,46 @@ function getServiceComponentNodeIds(flowPrefix, otherNodeId) {
     }
 
     return serviceNodes;
+}
+
+function getConsumptionDivisionNodeIds() {
+    return Object.keys(CONSUMPTION_DIVISION_COICOP_PREFIX)
+        .filter((nodeId) => knownNodeIds.has(nodeId))
+        .sort((a, b) => a.localeCompare(b));
+}
+
+function getConsumptionSubNodeIdsForDivision(divisionNodeId) {
+    const prefix = CONSUMPTION_DIVISION_COICOP_PREFIX[divisionNodeId];
+    if (!prefix) return [];
+    const codePattern = new RegExp(`CP${prefix}\\d`);
+    return [...knownNodeIds]
+        .filter((nodeId) => nodeId.endsWith('_eur_m'))
+        .filter((nodeId) => codePattern.test(nodeId))
+        .sort((a, b) => a.localeCompare(b));
+}
+
+function computeConsumptionFromCoicop(state) {
+    const divisionNodeIds = getConsumptionDivisionNodeIds();
+    if (divisionNodeIds.length === 0) return null;
+
+    divisionNodeIds.forEach((divisionNodeId) => {
+        const subNodeIds = getConsumptionSubNodeIdsForDivision(divisionNodeId);
+        if (subNodeIds.length === 0) return;
+        const subtotal = sumFiniteNodeValues(state, subNodeIds);
+        if (!Number.isFinite(subtotal)) return;
+        const row = nodeRegistryById.get(divisionNodeId);
+        if (row) {
+            setValueAtPath(state, row.storagePath, subtotal);
+        }
+    });
+
+    const totalNodeIds = [...divisionNodeIds];
+    if (knownNodeIds.has('gdp_consumption_other_eur_m')) {
+        totalNodeIds.push('gdp_consumption_other_eur_m');
+    }
+    const total = sumFiniteNodeValues(state, totalNodeIds);
+
+    return Number.isFinite(total) ? total : null;
 }
 
 
@@ -1452,9 +1506,12 @@ function projectOneStepRawMetrics(state) {
     Object.entries(nodeConfigs).forEach(([nodeId, cfg]) => {
         raw[nodeId] = denormalizeWithRange(projected[nodeId].current, cfg.min, cfg.max);
     });
-    const projectedConsumption = Number.isFinite(raw.consumption)
-        ? raw.consumption
-        : (Number(getStateValueByNodeId(state, 'consumption')) || 0);
+    const projectedConsumptionFromCoicop = computeConsumptionFromCoicop(state);
+    const projectedConsumption = Number.isFinite(projectedConsumptionFromCoicop)
+        ? projectedConsumptionFromCoicop
+        : (Number.isFinite(raw.consumption)
+            ? raw.consumption
+            : (Number(getStateValueByNodeId(state, 'consumption')) || 0));
     const gfcfComponentNodeIds = [
         'gdp_investment_gfcf_dwellings_eur_m',
         'gdp_investment_gfcf_other_structures_eur_m',
@@ -1792,7 +1849,10 @@ function recomputeDerivedEconomyMetrics(state) {
     }
 
     const previousGdp = Number(getStateValueByNodeId(state, 'gdp')) || 0;
-    const consumptionValue = Number(getStateValueByNodeId(state, 'consumption')) || 0;
+    const deterministicConsumption = computeConsumptionFromCoicop(state);
+    const consumptionValue = Number.isFinite(deterministicConsumption)
+        ? deterministicConsumption
+        : (Number(getStateValueByNodeId(state, 'consumption')) || 0);
     const investmentValue = Number(getStateValueByNodeId(state, 'investment')) || 0;
     const netExportsValue = Number(getStateValueByNodeId(state, 'netExports')) || 0;
     const budgetEntries = computeBudgetEntries(state);
@@ -1803,6 +1863,7 @@ function recomputeDerivedEconomyMetrics(state) {
         : policyGovernmentDemand;
     const nextGdp = consumptionValue + investmentValue + governmentDemandValue + netExportsValue;
 
+    state.economy.consumption = Number.isFinite(consumptionValue) ? consumptionValue : 0;
     state.economy.government_demand = Number.isFinite(governmentDemandValue) ? governmentDemandValue : 0;
     state.economy.gdp = Number.isFinite(nextGdp) ? nextGdp : 0;
     state.economy.gdpGrowth = computeAnnualizedGrowth(previousGdp, state.economy.gdp);

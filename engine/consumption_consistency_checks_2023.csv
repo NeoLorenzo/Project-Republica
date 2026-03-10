@@ -1,0 +1,4 @@
+﻿check_name,lhs,rhs,absolute_diff,percent_diff,pass_fail,notes
+Check A: sum(47 Sub-Nodes) = sum(12 Mains),181033.809,181033.809,0.000,0.00%,PASS,All 47 level-3 COICOP nodes reconcile exactly to the 12 division totals.
+Check B: sum(12 Mains) = Projected Total,181033.809,181033.700,0.109,0.00%,PASS (Via other),Residual node absorbs the 0.109 rounding difference.
+Check C: Shares sum to exactly 100%,100.000,100.000,0.000,0.00%,PASS,Share percentages reconcile to exactly 100%.
