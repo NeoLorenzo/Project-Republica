@@ -42,6 +42,26 @@ const ACCOUNTING_TARGET_BLOCKLIST = new Set([
 const EDGE_MODE_BEHAVIORAL = 'behavioral_contribution';
 const EDGE_MODE_ACCOUNTING = 'accounting_trace';
 const EDGE_MODE_ALLOWED = new Set([EDGE_MODE_BEHAVIORAL, EDGE_MODE_ACCOUNTING]);
+const TRADE_HS_NODE_PATTERN = /^(exports|imports)_goods_hs(\d{2})_eur_m$/;
+
+function getTradeComponentNodeIds(flowPrefix, otherNodeId) {
+    const hsNodes = [...knownNodeIds]
+        .filter((nodeId) => nodeId.startsWith(flowPrefix) && TRADE_HS_NODE_PATTERN.test(nodeId))
+        .sort((a, b) => {
+            const aMatch = a.match(/hs(\d{2})_eur_m$/);
+            const bMatch = b.match(/hs(\d{2})_eur_m$/);
+            const aCode = aMatch ? Number(aMatch[1]) : 0;
+            const bCode = bMatch ? Number(bMatch[1]) : 0;
+            return aCode - bCode;
+        });
+
+    if (otherNodeId && knownNodeIds.has(otherNodeId)) {
+        hsNodes.push(otherNodeId);
+    }
+
+    return hsNodes;
+}
+
 
 function clamp01(value) {
     return Math.max(0, Math.min(1, value));
@@ -1612,6 +1632,37 @@ function calculateBudget(state) {
 
 function recomputeDerivedEconomyMetrics(state) {
     if (!state?.economy) return;
+
+    const exportGoodsComponentNodeIds = getTradeComponentNodeIds('exports_goods_hs', 'exports_goods_other_eur_m');
+    const importGoodsComponentNodeIds = getTradeComponentNodeIds('imports_goods_hs', 'imports_goods_other_eur_m');
+
+    const exportsGoodsTotalByComponents = exportGoodsComponentNodeIds.reduce((sum, nodeId) => {
+        const value = Number(getStateValueByNodeId(state, nodeId));
+        return sum + (Number.isFinite(value) ? value : 0);
+    }, 0);
+    const importsGoodsTotalByComponents = importGoodsComponentNodeIds.reduce((sum, nodeId) => {
+        const value = Number(getStateValueByNodeId(state, nodeId));
+        return sum + (Number.isFinite(value) ? value : 0);
+    }, 0);
+    if (Number.isFinite(exportsGoodsTotalByComponents) && exportsGoodsTotalByComponents > 0) {
+        state.economy.exports_goods_total_eur_m = exportsGoodsTotalByComponents;
+    }
+    if (Number.isFinite(importsGoodsTotalByComponents) && importsGoodsTotalByComponents > 0) {
+        state.economy.imports_goods_total_eur_m = importsGoodsTotalByComponents;
+    }
+
+    const exportsGoodsValue = Number(getStateValueByNodeId(state, 'exports_goods_total_eur_m'));
+    const importsGoodsValue = Number(getStateValueByNodeId(state, 'imports_goods_total_eur_m'));
+    if (Number.isFinite(exportsGoodsValue) && Number.isFinite(importsGoodsValue)) {
+        state.economy.net_goods_trade_eur_m = exportsGoodsValue - importsGoodsValue;
+    }
+
+    const netGoodsTradeValue = Number(getStateValueByNodeId(state, 'net_goods_trade_eur_m'));
+    const netServicesTradeValue = Number(getStateValueByNodeId(state, 'net_services_trade_eur_m'));
+    if (Number.isFinite(netGoodsTradeValue) && Number.isFinite(netServicesTradeValue)) {
+        state.economy.netExports = netGoodsTradeValue + netServicesTradeValue;
+    }
+
     const previousGdp = Number(getStateValueByNodeId(state, 'gdp')) || 0;
     const consumptionValue = Number(getStateValueByNodeId(state, 'consumption')) || 0;
     const investmentValue = Number(getStateValueByNodeId(state, 'investment')) || 0;
@@ -1631,8 +1682,9 @@ function recomputeDerivedEconomyMetrics(state) {
     state.economy.debt_to_gdp = Number.isFinite(debtToGdp) ? debtToGdp : 0;
 }
 
-function recomputeDerivedPopulationMetrics(state) {
+function recomputeDerivedPopulationMetrics(state, options = {}) {
     if (!state?.population) return;
+    const applyStockUpdate = options.applyStockUpdate !== false;
 
     const populationState = state.population;
     const currentPopulation = Math.max(0, Number(populationState.total) || 0);
@@ -1702,11 +1754,34 @@ function recomputeDerivedPopulationMetrics(state) {
     const netMigrationAnnual = migrationInAnnual - migrationOutAnnual;
     const populationChangeAnnual = naturalChangeAnnual + netMigrationAnnual;
     const nextPopulation = Math.max(0, Math.round(currentPopulation + (populationChangeAnnual / 12)));
-    const crudeDeathRate = currentPopulation > 0 ? (deathsAnnual / currentPopulation) * 1000 : 0;
-    const netMigrationRate = currentPopulation > 0 ? (netMigrationAnnual / currentPopulation) * 1000 : 0;
+    const populationForDerived = applyStockUpdate ? nextPopulation : currentPopulation;
+    const crudeDeathRate = populationForDerived > 0 ? (deathsAnnual / populationForDerived) * 1000 : 0;
+    const netMigrationRate = populationForDerived > 0 ? (netMigrationAnnual / populationForDerived) * 1000 : 0;
+    const immigrationRateDerived = populationForDerived > 0 ? (migrationInAnnual / populationForDerived) * 1000 : 0;
+    const emigrationRateDerived = populationForDerived > 0 ? (migrationOutAnnual / populationForDerived) * 1000 : 0;
+
+    const landAreaKm2 = Math.max(1, Number(populationState.land_area_km2) || 0);
+    const populationDensityImplied = populationForDerived / landAreaKm2;
+    const averageHouseholdSize = Math.max(1.1, Number(populationState.average_household_size) || 0);
+    const householdsTotal = Math.max(0, Math.round(populationForDerived / averageHouseholdSize));
+    const housingStockTotal = Math.max(0, Math.round(Number(populationState.housing_stock_total) || 0));
+    const vacantDwellings = Math.max(0, Math.round(Number(populationState.vacant_dwellings) || 0));
+    const secondaryDwellings = Math.max(0, Math.round(Number(populationState.secondary_dwellings) || 0));
+    const otherDwellingsResidual = Math.max(0, Math.round(Number(populationState.other_dwellings_residual) || 0));
+    const occupiedDwellings = Math.max(0, Math.round(
+        housingStockTotal - vacantDwellings - secondaryDwellings - otherDwellingsResidual
+    ));
+    const vacancyRatePercent = housingStockTotal > 0
+        ? (vacantDwellings / housingStockTotal) * 100
+        : 0;
+    const ownerOccupiedSharePct = clamp(Number(populationState.owner_occupied_share) || 0, 0, 100);
+    const ownerOccupiedDwellings = Math.max(0, Math.round(occupiedDwellings * (ownerOccupiedSharePct / 100)));
+    const rentedDwellings = Math.max(0, occupiedDwellings - ownerOccupiedDwellings);
 
     populationState.crude_birth_rate_per_1000 = crudeBirthRate;
     populationState.crude_death_rate_per_1000 = crudeDeathRate;
+    populationState.immigration_rate_per_1000 = immigrationRateDerived;
+    populationState.emigration_rate_per_1000 = emigrationRateDerived;
     populationState.births_annual = birthsAnnual;
     populationState.deaths_annual = deathsAnnual;
     populationState.migration_in_annual = migrationInAnnual;
@@ -1727,7 +1802,16 @@ function recomputeDerivedPopulationMetrics(state) {
     populationState.deaths_homicide_annual = deathsHomicide;
     populationState.deaths_other_annual = deathsOther;
     populationState.net_migration_rate = netMigrationRate;
-    populationState.total = nextPopulation;
+    populationState.population_density_implied = populationDensityImplied;
+    populationState.population_density = populationDensityImplied;
+    populationState.households_total = householdsTotal;
+    populationState.occupied_dwellings = occupiedDwellings;
+    populationState.vacancy_rate_percent = vacancyRatePercent;
+    populationState.owner_occupied_dwellings = ownerOccupiedDwellings;
+    populationState.rented_dwellings = rentedDwellings;
+    if (applyStockUpdate) {
+        populationState.total = nextPopulation;
+    }
 }
 
 function calculateBudgetBreakdown(state) {

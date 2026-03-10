@@ -1,0 +1,2 @@
+source_id,institution,dataset_table,direct_url,bookmark_url,publication_date,reference_period,notes
+SRC_EUROSTAT_DS045409,Eurostat,EU trade since 1988 by HS2-4-6 and CN8 (ds-045409),https://ec.europa.eu/eurostat/databrowser/view/DS-045409/,https://ec.europa.eu/eurostat/databrowser/bookmark/c429393a-1966-417c-9f2f-4f59bc241589?lang=en&createdAt=2026-03-10T10:55:42Z,2024-01-01,2023 Annual,User-provided Eurostat extract containing exact 2023 Euro values.
