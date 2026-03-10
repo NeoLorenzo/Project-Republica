@@ -33,7 +33,6 @@ const defaultPhysicsSettings = {
 // Using a fixed domain avoids "strongest link always looks identical" artifacts.
 const LINK_VISUAL_MAGNITUDE_MAX = 4.0;
 const ACCOUNTING_EDGE_LAYOUT_MAGNITUDE = 0.08;
-const ACCOUNTING_EDGE_INBOUND_COUNT_WEIGHT = 0.15;
 const EDGE_COLOR_BEHAVIORAL_POSITIVE = '#4ade80';
 const EDGE_COLOR_BEHAVIORAL_NEGATIVE = '#f87171';
 const EDGE_COLOR_ACCOUNTING_POSITIVE = '#60a5fa';
@@ -353,74 +352,116 @@ function assignLinkCurvature(links) {
     });
 }
 
-// Node size score is driven only by inbound edges:
-// - base score
-// - inbound edge count
-// - inbound edge magnitude
-// - slight boost from the sizes of inbound neighbors
+function getLinkSizingWeight(link) {
+    if (isAccountingEdge(link)) return 1;
+    const rawMagnitude = Number(link?.magnitude);
+    if (!Number.isFinite(rawMagnitude)) return 0.25;
+    return Math.max(0.12, Math.min(2.8, rawMagnitude));
+}
+
+function normalizeNodeMapByIds(map, nodeIds) {
+    const values = nodeIds.map((id) => map.get(id) || 0);
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+    const span = maxValue - minValue;
+    const normalized = new Map();
+
+    if (span <= 0.000001) {
+        nodeIds.forEach((id) => normalized.set(id, 0));
+        return normalized;
+    }
+
+    nodeIds.forEach((id) => {
+        normalized.set(id, ((map.get(id) || 0) - minValue) / span);
+    });
+    return normalized;
+}
+
+// Node size is directional:
+// 1) direct inbound structure,
+// 2) graph depth (downstream nodes become larger),
+// 3) propagated upstream flow into downstream aggregates.
 function computeNodeSizingScores(nodes, links) {
     const nodeIds = nodes.map((node) => node.id);
     const inboundCountMap = new Map(nodeIds.map((id) => [id, 0]));
+    const inboundWeightSumMap = new Map(nodeIds.map((id) => [id, 0]));
+    const outboundWeightSumMap = new Map(nodeIds.map((id) => [id, 0]));
     const inboundAdjacency = new Map(nodeIds.map((id) => [id, []]));
-    const inboundMagnitudeSumMap = new Map(nodeIds.map((id) => [id, 0]));
+    const outboundAdjacency = new Map(nodeIds.map((id) => [id, []]));
 
     links.forEach((link) => {
         const sourceId = getEndpointId(link.source);
         const targetId = getEndpointId(link.target);
         if (!inboundCountMap.has(sourceId) || !inboundCountMap.has(targetId)) return;
 
-        const edgeWeight = getLinkLayoutMagnitude(link);
-        const countWeight = isAccountingEdge(link) ? ACCOUNTING_EDGE_INBOUND_COUNT_WEIGHT : 1;
-        inboundCountMap.set(targetId, (inboundCountMap.get(targetId) || 0) + countWeight);
-        inboundMagnitudeSumMap.set(targetId, (inboundMagnitudeSumMap.get(targetId) || 0) + edgeWeight);
-        inboundAdjacency.get(targetId).push({ id: sourceId, weight: edgeWeight });
+        const sizingWeight = getLinkSizingWeight(link);
+        inboundCountMap.set(targetId, (inboundCountMap.get(targetId) || 0) + 1);
+        inboundWeightSumMap.set(targetId, (inboundWeightSumMap.get(targetId) || 0) + sizingWeight);
+        outboundWeightSumMap.set(sourceId, (outboundWeightSumMap.get(sourceId) || 0) + sizingWeight);
+        inboundAdjacency.get(targetId).push({ id: sourceId, weight: sizingWeight });
+        outboundAdjacency.get(sourceId).push({ id: targetId, weight: sizingWeight });
     });
 
     const inboundCounts = nodeIds.map((id) => inboundCountMap.get(id) || 0);
-    const inboundMagnitudeSums = nodeIds.map((id) => inboundMagnitudeSumMap.get(id) || 0);
     const maxInboundCount = Math.max(1, ...inboundCounts);
-    const maxInboundMagnitudeSum = Math.max(0.0001, ...inboundMagnitudeSums);
-
-    const baseScoreFloor = 0.55;
-    const inboundCountWeight = 0.70;
-    const inboundMagnitudeWeight = 0.60;
-
+    const inboundWeightNormalized = normalizeNodeMapByIds(inboundWeightSumMap, nodeIds);
     const baseScore = new Map(nodeIds.map((id) => {
         const normalizedInboundCount = (inboundCountMap.get(id) || 0) / maxInboundCount;
-        const normalizedInboundMagnitude = (inboundMagnitudeSumMap.get(id) || 0) / maxInboundMagnitudeSum;
-        const score = baseScoreFloor
-            + (normalizedInboundCount * inboundCountWeight)
-            + (normalizedInboundMagnitude * inboundMagnitudeWeight);
-        return [id, score];
+        const normalizedInboundWeight = inboundWeightNormalized.get(id) || 0;
+        return [id, 0.35 + (normalizedInboundCount * 0.60) + (normalizedInboundWeight * 0.75)];
     }));
 
-    const scores = new Map(baseScore);
-    const inboundNeighborInfluenceMix = 0.18;
-    const iterations = 6;
-
-    for (let i = 0; i < iterations; i++) {
-        const nextScores = new Map();
+    // Approximate weighted DAG depth by relaxing depth = 1 + weighted average(parent depth).
+    let depthScore = new Map(nodeIds.map((id) => [id, 0]));
+    for (let i = 0; i < 10; i++) {
+        const nextDepth = new Map();
         nodeIds.forEach((id) => {
-            const neighbors = inboundAdjacency.get(id) || [];
-            if (!neighbors.length) {
-                nextScores.set(id, baseScore.get(id) || 0.1);
+            const parents = inboundAdjacency.get(id) || [];
+            if (!parents.length) {
+                nextDepth.set(id, 0);
                 return;
             }
-
             let weightedSum = 0;
             let totalWeight = 0;
-            neighbors.forEach((neighbor) => {
-                weightedSum += (scores.get(neighbor.id) || 0) * neighbor.weight;
-                totalWeight += neighbor.weight;
+            parents.forEach((parent) => {
+                weightedSum += ((depthScore.get(parent.id) || 0) + 1) * parent.weight;
+                totalWeight += parent.weight;
             });
-
-            const neighborInfluence = totalWeight > 0 ? (weightedSum / totalWeight) : 0;
-            const next = ((baseScore.get(id) || 0.1) * (1 - inboundNeighborInfluenceMix))
-                + (neighborInfluence * inboundNeighborInfluenceMix);
-            nextScores.set(id, next);
+            nextDepth.set(id, totalWeight > 0 ? (weightedSum / totalWeight) : 0);
         });
-        nextScores.forEach((value, id) => scores.set(id, value));
+        depthScore = nextDepth;
     }
+    const depthNormalized = normalizeNodeMapByIds(depthScore, nodeIds);
+
+    // Push score mass from sources to targets so downstream aggregators absorb upstream influence.
+    let propagatedScore = new Map(baseScore);
+    const baseRetention = 0.58;
+    const transferRate = 0.42;
+    for (let i = 0; i < 14; i++) {
+        const nextScore = new Map(nodeIds.map((id) => [id, (baseScore.get(id) || 0) * baseRetention]));
+        nodeIds.forEach((sourceId) => {
+            const outgoing = outboundAdjacency.get(sourceId) || [];
+            if (!outgoing.length) return;
+            const outboundWeight = Math.max(0.0001, outboundWeightSumMap.get(sourceId) || 0);
+            const sourceScore = propagatedScore.get(sourceId) || 0;
+            outgoing.forEach((edge) => {
+                const share = edge.weight / outboundWeight;
+                const delivered = sourceScore * transferRate * share;
+                nextScore.set(edge.id, (nextScore.get(edge.id) || 0) + delivered);
+            });
+        });
+        propagatedScore = nextScore;
+    }
+    const propagatedNormalized = normalizeNodeMapByIds(propagatedScore, nodeIds);
+
+    const scores = new Map();
+    nodeIds.forEach((id) => {
+        const direct = inboundWeightNormalized.get(id) || 0;
+        const depth = depthNormalized.get(id) || 0;
+        const downstreamFlow = propagatedNormalized.get(id) || 0;
+        const score = 0.42 + (direct * 0.35) + (depth * 0.75) + (downstreamFlow * 0.95);
+        scores.set(id, score);
+    });
 
     return { degreeMap: inboundCountMap, scoreMap: scores };
 }
