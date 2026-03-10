@@ -1,0 +1,10 @@
+node_id,value_eur_m,derivation,source_id,source_url,period,confidence,notes
+gdp_investment_gfcf_dwellings_eur_m,11178.700,FALSE,SRC_EUROSTAT_NAMA10AN6,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_AN6/,2023 Annual,High,Official extract (N111G)
+gdp_investment_gfcf_other_structures_eur_m,18941.500,FALSE,SRC_EUROSTAT_NAMA10AN6,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_AN6/,2023 Annual,High,Official extract (N112G)
+gdp_investment_gfcf_transport_equip_eur_m,4202.200,FALSE,SRC_EUROSTAT_NAMA10AN6,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_AN6/,2023 Annual,High,Official extract (N1131G)
+gdp_investment_gfcf_ict_equip_eur_m,2148.900,FALSE,SRC_EUROSTAT_NAMA10AN6,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_AN6/,2023 Annual,High,Official extract (N1132G)
+gdp_investment_gfcf_other_machinery_weapons_eur_m,9573.200,FALSE,SRC_EUROSTAT_NAMA10AN6,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_AN6/,2023 Annual,High,Official extract (N11OG)
+gdp_investment_gfcf_cultivated_biological_eur_m,464.200,FALSE,SRC_EUROSTAT_NAMA10AN6,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_AN6/,2023 Annual,High,Official extract (N115G)
+gdp_investment_gfcf_ip_products_eur_m,8875.600,FALSE,SRC_EUROSTAT_NAMA10AN6,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_AN6/,2023 Annual,High,Official extract (N117G)
+gdp_investment_gfcf_other_eur_m,0.000,investment - sum(mapped_assets),SRC_EUROSTAT_NAMA10AN6,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_AN6/,2023 Annual,High,Absorbs data gaps (currently 0.0)
+investment,55384.300,FALSE,SRC_EUROSTAT_NAMA10AN6,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_AN6/,2023 Annual,High,Published total fixed assets (N11G) merged into canonical investment node

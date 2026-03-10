@@ -1,0 +1,2 @@
+source_id,institution,dataset_table,direct_url,publication_date,reference_period,notes
+SRC_EUROSTAT_GOV10AEXP,Eurostat,General government expenditure by function (gov_10a_exp),https://ec.europa.eu/eurostat/databrowser/view/GOV_10A_EXP/,2024-01-01,2023 Annual,2023 Provisional Euro values. Used exclusively for Simulation 'G' (Government) component. S13 Sector.

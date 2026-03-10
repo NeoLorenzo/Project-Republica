@@ -1,0 +1,2 @@
+source_id,institution,dataset_table,direct_url,bookmark_url,publication_date,reference_period,notes
+SRC_EUROSTAT_NAMA10AN6,Eurostat,Gross fixed capital formation by main asset type (nama_10_an6),https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_AN6/,https://ec.europa.eu/eurostat/databrowser/bookmark/b6b8d87c-1989-47b9-8342-695d3d47f107?lang=en&createdAt=2026-03-10T13:00:41Z,2024-01-01,2023 Annual,User-provided Eurostat extract containing exact 2023 Euro values for GDP investment decomposition.

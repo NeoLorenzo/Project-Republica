@@ -1455,13 +1455,34 @@ function projectOneStepRawMetrics(state) {
     const projectedConsumption = Number.isFinite(raw.consumption)
         ? raw.consumption
         : (Number(getStateValueByNodeId(state, 'consumption')) || 0);
-    const projectedInvestment = Number.isFinite(raw.investment)
-        ? raw.investment
-        : (Number(getStateValueByNodeId(state, 'investment')) || 0);
+    const gfcfComponentNodeIds = [
+        'gdp_investment_gfcf_dwellings_eur_m',
+        'gdp_investment_gfcf_other_structures_eur_m',
+        'gdp_investment_gfcf_transport_equip_eur_m',
+        'gdp_investment_gfcf_ict_equip_eur_m',
+        'gdp_investment_gfcf_other_machinery_weapons_eur_m',
+        'gdp_investment_gfcf_cultivated_biological_eur_m',
+        'gdp_investment_gfcf_ip_products_eur_m',
+        'gdp_investment_gfcf_other_eur_m'
+    ].filter((nodeId) => knownNodeIds.has(nodeId));
+    const projectedInvestmentFromGfcf = gfcfComponentNodeIds.length > 0
+        ? gfcfComponentNodeIds.reduce((sum, nodeId) => {
+            const value = Number(getStateValueByNodeId(state, nodeId));
+            return sum + (Number.isFinite(value) ? value : 0);
+        }, 0)
+        : null;
+    const projectedInvestment = Number.isFinite(projectedInvestmentFromGfcf)
+        ? projectedInvestmentFromGfcf
+        : (Number.isFinite(raw.investment)
+            ? raw.investment
+            : (Number(getStateValueByNodeId(state, 'investment')) || 0));
     const projectedNetExports = Number.isFinite(raw.netExports)
         ? raw.netExports
         : (Number(getStateValueByNodeId(state, 'netExports')) || 0);
-    const projectedGovernmentDemand = calculateGovernmentDemand(state, computeBudgetEntries(state));
+    const projectedGovernmentDemandFromCofog = computeGovernmentDemandFromCofog(state);
+    const projectedGovernmentDemand = Number.isFinite(projectedGovernmentDemandFromCofog)
+        ? projectedGovernmentDemandFromCofog
+        : calculateGovernmentDemand(state, computeBudgetEntries(state));
     const projectedGdp = projectedConsumption + projectedInvestment + projectedGovernmentDemand + projectedNetExports;
     const previousGdp = Number(getStateValueByNodeId(state, 'gdp')) || 0;
 
@@ -1563,6 +1584,55 @@ function calculateGovernmentDemand(state, entries) {
     }, 0);
     const calibratedValue = demandValue * governmentDemandCalibrationFactor;
     return Number.isFinite(calibratedValue) ? calibratedValue : 0;
+}
+
+function sumFiniteNodeValues(state, nodeIds) {
+    if (!Array.isArray(nodeIds) || nodeIds.length === 0) return 0;
+    return nodeIds.reduce((sum, nodeId) => {
+        const value = Number(getStateValueByNodeId(state, nodeId));
+        return sum + (Number.isFinite(value) ? value : 0);
+    }, 0);
+}
+
+function getGovExpDivisionNodeIds() {
+    return [...knownNodeIds]
+        .filter((nodeId) => /^gdp_gov_exp_[a-z_]+_eur_m$/.test(nodeId))
+        .filter((nodeId) => nodeId !== 'gdp_gov_exp_other_eur_m')
+        .filter((nodeId) => !/_GF\d{4}_/.test(nodeId))
+        .sort((a, b) => a.localeCompare(b));
+}
+
+function getGovExpSubNodeIdsForDivision(divisionNodeId) {
+    if (!divisionNodeId || !divisionNodeId.endsWith('_eur_m')) return [];
+    const prefix = divisionNodeId.replace(/_eur_m$/, '_');
+    return [...knownNodeIds]
+        .filter((nodeId) => nodeId.startsWith(prefix))
+        .filter((nodeId) => nodeId.endsWith('_eur_m'))
+        .filter((nodeId) => nodeId !== divisionNodeId)
+        .sort((a, b) => a.localeCompare(b));
+}
+
+function computeGovernmentDemandFromCofog(state) {
+    const divisionNodeIds = getGovExpDivisionNodeIds();
+    if (divisionNodeIds.length === 0) return null;
+
+    divisionNodeIds.forEach((divisionNodeId) => {
+        const subNodeIds = getGovExpSubNodeIdsForDivision(divisionNodeId);
+        if (subNodeIds.length === 0) return;
+        const subtotal = sumFiniteNodeValues(state, subNodeIds);
+        if (!Number.isFinite(subtotal)) return;
+        const row = nodeRegistryById.get(divisionNodeId);
+        if (row) {
+            setValueAtPath(state, row.storagePath, subtotal);
+        }
+    });
+
+    const topNodeIds = [...divisionNodeIds];
+    if (knownNodeIds.has('gdp_gov_exp_other_eur_m')) {
+        topNodeIds.push('gdp_gov_exp_other_eur_m');
+    }
+    const total = sumFiniteNodeValues(state, topNodeIds);
+    return Number.isFinite(total) ? total : null;
 }
 
 function computeAnnualizedGrowth(previousValue, nextValue) {
@@ -1687,6 +1757,28 @@ function recomputeDerivedEconomyMetrics(state) {
         state.economy.imports_services_total_eur_m = importsServicesTotalByComponents;
     }
 
+    const gfcfComponentNodeIds = [
+        'gdp_investment_gfcf_dwellings_eur_m',
+        'gdp_investment_gfcf_other_structures_eur_m',
+        'gdp_investment_gfcf_transport_equip_eur_m',
+        'gdp_investment_gfcf_ict_equip_eur_m',
+        'gdp_investment_gfcf_other_machinery_weapons_eur_m',
+        'gdp_investment_gfcf_cultivated_biological_eur_m',
+        'gdp_investment_gfcf_ip_products_eur_m',
+        'gdp_investment_gfcf_other_eur_m'
+    ].filter((nodeId) => knownNodeIds.has(nodeId));
+    if (gfcfComponentNodeIds.length > 0) {
+        const gfcfTotalByComponents = gfcfComponentNodeIds.reduce((sum, nodeId) => {
+            const value = Number(getStateValueByNodeId(state, nodeId));
+            return sum + (Number.isFinite(value) ? value : 0);
+        }, 0);
+        if (Number.isFinite(gfcfTotalByComponents)) {
+            if (knownNodeIds.has('investment')) {
+                state.economy.investment = gfcfTotalByComponents;
+            }
+        }
+    }
+
     const exportsGoodsValue = Number(getStateValueByNodeId(state, 'exports_goods_total_eur_m'));
     const importsGoodsValue = Number(getStateValueByNodeId(state, 'imports_goods_total_eur_m'));
     if (Number.isFinite(exportsGoodsValue) && Number.isFinite(importsGoodsValue)) {
@@ -1704,7 +1796,11 @@ function recomputeDerivedEconomyMetrics(state) {
     const investmentValue = Number(getStateValueByNodeId(state, 'investment')) || 0;
     const netExportsValue = Number(getStateValueByNodeId(state, 'netExports')) || 0;
     const budgetEntries = computeBudgetEntries(state);
-    const governmentDemandValue = calculateGovernmentDemand(state, budgetEntries);
+    const deterministicGovernmentDemand = computeGovernmentDemandFromCofog(state);
+    const policyGovernmentDemand = calculateGovernmentDemand(state, budgetEntries);
+    const governmentDemandValue = Number.isFinite(deterministicGovernmentDemand)
+        ? deterministicGovernmentDemand
+        : policyGovernmentDemand;
     const nextGdp = consumptionValue + investmentValue + governmentDemandValue + netExportsValue;
 
     state.economy.government_demand = Number.isFinite(governmentDemandValue) ? governmentDemandValue : 0;

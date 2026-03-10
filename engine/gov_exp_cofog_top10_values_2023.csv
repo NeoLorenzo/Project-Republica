@@ -1,0 +1,11 @@
+cofog_code,cofog_name,value_eur_m,share_percent,period,source_id,source_url
+GF01,General public services,15416.000,13.599,2023 Annual,SRC_EUROSTAT_GOV10AEXP,https://ec.europa.eu/eurostat/databrowser/view/GOV_10A_EXP/
+GF02,Defence,2065.000,1.822,2023 Annual,SRC_EUROSTAT_GOV10AEXP,https://ec.europa.eu/eurostat/databrowser/view/GOV_10A_EXP/
+GF03,Public order and safety,4279.800,3.775,2023 Annual,SRC_EUROSTAT_GOV10AEXP,https://ec.europa.eu/eurostat/databrowser/view/GOV_10A_EXP/
+GF04,Economic affairs,11657.900,10.284,2023 Annual,SRC_EUROSTAT_GOV10AEXP,https://ec.europa.eu/eurostat/databrowser/view/GOV_10A_EXP/
+GF05,Environmental protection,2021.000,1.783,2023 Annual,SRC_EUROSTAT_GOV10AEXP,https://ec.europa.eu/eurostat/databrowser/view/GOV_10A_EXP/
+GF06,Housing and community amenities,1436.800,1.267,2023 Annual,SRC_EUROSTAT_GOV10AEXP,https://ec.europa.eu/eurostat/databrowser/view/GOV_10A_EXP/
+GF07,Health,17993.000,15.872,2023 Annual,SRC_EUROSTAT_GOV10AEXP,https://ec.europa.eu/eurostat/databrowser/view/GOV_10A_EXP/
+GF08,"Recreation, culture and religion",2473.800,2.182,2023 Annual,SRC_EUROSTAT_GOV10AEXP,https://ec.europa.eu/eurostat/databrowser/view/GOV_10A_EXP/
+GF09,Education,11635.300,10.264,2023 Annual,SRC_EUROSTAT_GOV10AEXP,https://ec.europa.eu/eurostat/databrowser/view/GOV_10A_EXP/
+GF10,Social protection,44383.000,39.152,2023 Annual,SRC_EUROSTAT_GOV10AEXP,https://ec.europa.eu/eurostat/databrowser/view/GOV_10A_EXP/

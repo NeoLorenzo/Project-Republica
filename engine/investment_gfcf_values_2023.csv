@@ -1,0 +1,8 @@
+asset_code,asset_name,value_eur_m,share_percent,period,source_id,source_url
+N111G,Dwellings (gross),11178.700,20.184,2023 Annual,SRC_EUROSTAT_NAMA10AN6,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_AN6/
+N112G,Other buildings and structures (gross),18941.500,34.198,2023 Annual,SRC_EUROSTAT_NAMA10AN6,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_AN6/
+N1131G,Transport equipment (gross),4202.200,7.587,2023 Annual,SRC_EUROSTAT_NAMA10AN6,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_AN6/
+N1132G,ICT equipment (gross),2148.900,3.880,2023 Annual,SRC_EUROSTAT_NAMA10AN6,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_AN6/
+N11OG,Other machinery and equipment and weapons systems (gross),9573.200,17.285,2023 Annual,SRC_EUROSTAT_NAMA10AN6,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_AN6/
+N115G,Cultivated biological resources (gross),464.200,0.838,2023 Annual,SRC_EUROSTAT_NAMA10AN6,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_AN6/
+N117G,Intellectual property products (gross),8875.600,16.026,2023 Annual,SRC_EUROSTAT_NAMA10AN6,https://ec.europa.eu/eurostat/databrowser/view/NAMA_10_AN6/

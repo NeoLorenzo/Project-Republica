@@ -1,0 +1,5 @@
+check_name,lhs,rhs,absolute_diff,percent_diff,pass_fail,notes
+Check A: sum(10 main divisions) = Published Total,113361.600,113361.700,0.100,0.00%,PASS (Via other node),Residual top-level other node closes the 0.1 difference.
+Check B: sum(Social Protection Subs) = GF10 Total,44383.100,44383.000,-0.100,0.00%,PASS (Via other node),Social protection residual node absorbs the -0.1 reconciliation gap.
+Check C: sum(Health Subs) = GF07 Total,17993.000,17993.000,0.000,0.00%,PASS,Health subtree reconciles exactly.
+Check D: sum(Education Subs) = GF09 Total,11635.300,11635.300,0.000,0.00%,PASS,Education subtree reconciles exactly.
