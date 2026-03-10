@@ -4,28 +4,29 @@
 let forceGraphContext = {
     container: null,
     svg: null,
+    viewport: null,
     linkLayer: null,
     nodeLayer: null,
     linkSelection: null,
     nodeSelection: null,
     simulation: null,
+    zoomBehavior: null,
     currentState: null,
     width: 0,
     height: 0,
-    boundaryPadding: 8,
     physicsSettings: null,
     lastTopologySignature: ''
 };
 
 const defaultPhysicsSettings = {
-    chargeStrength: -210,
-    gravityStrength: 0.045,
+    chargeStrength: -300,
+    gravityStrength: 0.020,
     collisionStrength: 0.85,
     collisionPadding: 12,
     linkDistanceFar: 230,
     linkDistanceNear: 130,
     linkStrengthMin: 0.04,
-    linkStrengthMax: 0.28
+    linkStrengthMax: 0.30
 };
 
 // Absolute visual scale for relationship intensity.
@@ -37,6 +38,8 @@ const EDGE_COLOR_BEHAVIORAL_POSITIVE = '#4ade80';
 const EDGE_COLOR_BEHAVIORAL_NEGATIVE = '#f87171';
 const EDGE_COLOR_ACCOUNTING_POSITIVE = '#60a5fa';
 const EDGE_COLOR_ACCOUNTING_NEGATIVE = '#f59e0b';
+const FORCE_GRAPH_MIN_ZOOM = 0.12;
+const FORCE_GRAPH_MAX_ZOOM = 3.5;
 
 const NODE_ICON_BY_ID = {
     incomeTax: '\u{1F4B0}',
@@ -213,6 +216,34 @@ function initializeForceGraph(containerEl) {
         .attr('class', 'force-graph')
         .attr('width', containerEl.clientWidth)
         .attr('height', containerEl.clientHeight);
+    forceGraphContext.viewport = forceGraphContext.svg.append('g').attr('class', 'force-viewport');
+
+    const zoomFilter = (event) => {
+        if (event.type === 'wheel') return true;
+        if (event.button) return false;
+        const target = event.target;
+        const isNodeEvent = !!(target && typeof target.closest === 'function' && target.closest('.force-node'));
+        return !isNodeEvent;
+    };
+
+    forceGraphContext.zoomBehavior = d3
+        .zoom()
+        .filter(zoomFilter)
+        .scaleExtent([FORCE_GRAPH_MIN_ZOOM, FORCE_GRAPH_MAX_ZOOM])
+        .on('start', () => {
+            forceGraphContext.svg.classed('is-panning', true);
+            if (typeof hideTooltip === 'function') hideTooltip();
+        })
+        .on('zoom', (event) => {
+            if (forceGraphContext.viewport) {
+                forceGraphContext.viewport.attr('transform', event.transform);
+            }
+        })
+        .on('end', () => {
+            forceGraphContext.svg.classed('is-panning', false);
+        });
+
+    forceGraphContext.svg.call(forceGraphContext.zoomBehavior).on('dblclick.zoom', null);
 
     const defs = forceGraphContext.svg.append('defs');
     defs
@@ -267,29 +298,11 @@ function initializeForceGraph(containerEl) {
         .attr('d', 'M 0 0 L 10 5 L 0 10 z')
         .attr('fill', EDGE_COLOR_ACCOUNTING_NEGATIVE);
 
-    forceGraphContext.linkLayer = forceGraphContext.svg.append('g').attr('class', 'force-links');
-    forceGraphContext.nodeLayer = forceGraphContext.svg.append('g').attr('class', 'force-nodes');
+    forceGraphContext.linkLayer = forceGraphContext.viewport.append('g').attr('class', 'force-links');
+    forceGraphContext.nodeLayer = forceGraphContext.viewport.append('g').attr('class', 'force-nodes');
 
     forceGraphContext.simulation = d3.forceSimulation([]);
     forceGraphContext.physicsSettings = { ...defaultPhysicsSettings };
-}
-
-function clampNodePosition(node) {
-    const radius = getNodeRadius(node);
-    const minX = radius + forceGraphContext.boundaryPadding;
-    const maxX = Math.max(minX, forceGraphContext.width - radius - forceGraphContext.boundaryPadding);
-    const minY = radius + forceGraphContext.boundaryPadding;
-    const maxY = Math.max(minY, forceGraphContext.height - radius - forceGraphContext.boundaryPadding);
-
-    node.x = Math.max(minX, Math.min(maxX, node.x));
-    node.y = Math.max(minY, Math.min(maxY, node.y));
-
-    if (node.fx !== null && node.fx !== undefined) {
-        node.fx = Math.max(minX, Math.min(maxX, node.fx));
-    }
-    if (node.fy !== null && node.fy !== undefined) {
-        node.fy = Math.max(minY, Math.min(maxY, node.fy));
-    }
 }
 
 function getEndpointId(endpoint) {
@@ -447,10 +460,20 @@ function applySimulationForces(nodes, links, width, height, maxMagnitude) {
     if (!forceGraphContext.simulation) return;
 
     const settings = forceGraphContext.physicsSettings || defaultPhysicsSettings;
+    const nodeCount = Math.max(1, nodes.length);
+    // As the graph grows, reduce spacing/repulsion and increase centering pull
+    // so first layout stays readable without hard screen boundaries.
+    const densityFactor = Math.max(1, Math.min(2.6, Math.sqrt(nodeCount / 80)));
+    const effectiveChargeStrength = settings.chargeStrength / densityFactor;
+    const effectiveGravityStrength = settings.gravityStrength * densityFactor;
+    const effectiveCollisionPadding = Math.max(4, settings.collisionPadding / (densityFactor * 0.9));
+    const effectiveLinkDistanceFar = Math.max(80, settings.linkDistanceFar / densityFactor);
+    const effectiveLinkDistanceNear = Math.max(46, settings.linkDistanceNear / densityFactor);
+
     const distanceScale = d3
         .scaleLinear()
         .domain([0, Math.max(0.01, maxMagnitude)])
-        .range([settings.linkDistanceFar, settings.linkDistanceNear]);
+        .range([effectiveLinkDistanceFar, effectiveLinkDistanceNear]);
     const strengthScale = d3
         .scaleLinear()
         .domain([0, Math.max(0.01, maxMagnitude)])
@@ -458,14 +481,14 @@ function applySimulationForces(nodes, links, width, height, maxMagnitude) {
 
     forceGraphContext.simulation
         .nodes(nodes)
-        .force('charge', d3.forceManyBody().strength(settings.chargeStrength))
+        .force('charge', d3.forceManyBody().strength(effectiveChargeStrength))
         .force('center', d3.forceCenter(width / 2, height / 2))
-        .force('gravityX', d3.forceX(width / 2).strength(settings.gravityStrength))
-        .force('gravityY', d3.forceY(height / 2).strength(settings.gravityStrength))
+        .force('gravityX', d3.forceX(width / 2).strength(effectiveGravityStrength))
+        .force('gravityY', d3.forceY(height / 2).strength(effectiveGravityStrength))
         .force(
             'collide',
             d3.forceCollide()
-                .radius((d) => getNodeRadius(d) + settings.collisionPadding)
+                .radius((d) => getNodeRadius(d) + effectiveCollisionPadding)
                 .strength(settings.collisionStrength)
         )
         .force(
@@ -501,9 +524,6 @@ function setGraphPhysicsSettings(nextSettings) {
 
 function onTick() {
     if (!forceGraphContext.linkSelection || !forceGraphContext.nodeSelection) return;
-
-    const simulationNodes = forceGraphContext.simulation ? forceGraphContext.simulation.nodes() : [];
-    simulationNodes.forEach(clampNodePosition);
 
     forceGraphContext.linkSelection.attr('d', (d) => getLinkPath(d));
 
@@ -605,6 +625,9 @@ function renderForceGraph(state) {
             d._dragMoved = false;
             d._dragStartX = event.x;
             d._dragStartY = event.y;
+            if (event.sourceEvent && typeof event.sourceEvent.stopPropagation === 'function') {
+                event.sourceEvent.stopPropagation();
+            }
             if (!event.active) forceGraphContext.simulation.alphaTarget(0.25).restart();
             d.fx = d.x;
             d.fy = d.y;
@@ -615,7 +638,6 @@ function renderForceGraph(state) {
             if (movedDistance > 4) d._dragMoved = true;
             d.fx = event.x;
             d.fy = event.y;
-            clampNodePosition(d);
         })
         .on('end', (event, d) => {
             if (!event.active) forceGraphContext.simulation.alphaTarget(0);
@@ -727,7 +749,8 @@ function renderForceGraph(state) {
 
     applySimulationForces(nodes, links, width, height, maxMagnitude);
     if (isTopologyChanged || previousNodes.size === 0) {
-        forceGraphContext.simulation.alpha(0.55).restart();
+        forceGraphContext.simulation.alphaTarget(0.05);
+        forceGraphContext.simulation.alpha(0.92).restart();
     } else {
         // In-place update: small energy injection to avoid explode/contract on every turn.
         forceGraphContext.simulation.alphaTarget(0.03);
@@ -745,15 +768,16 @@ function destroyForceGraph() {
     forceGraphContext = {
         container: null,
         svg: null,
+        viewport: null,
         linkLayer: null,
         nodeLayer: null,
         linkSelection: null,
         nodeSelection: null,
         simulation: null,
+        zoomBehavior: null,
         currentState: null,
         width: 0,
         height: 0,
-        boundaryPadding: 8,
         physicsSettings: null,
         lastTopologySignature: ''
     };
