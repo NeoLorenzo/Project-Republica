@@ -1,0 +1,14 @@
+ebops_code,ebops_name,exports_value_eur_m,imports_value_eur_m,period,source_id,source_url
+SA,Manufacturing Services,497.000,42.000,2023 Annual,SRC_EUROSTAT_BOPITS6,https://ec.europa.eu/eurostat/databrowser/view/BOP_ITS6_DET/
+SB,Maintenance & Repairs,883.000,593.000,2023 Annual,SRC_EUROSTAT_BOPITS6,https://ec.europa.eu/eurostat/databrowser/view/BOP_ITS6_DET/
+SC,Transport Services,10309.000,5600.000,2023 Annual,SRC_EUROSTAT_BOPITS6,https://ec.europa.eu/eurostat/databrowser/view/BOP_ITS6_DET/
+SD,Travel & Tourism,25470.000,6382.000,2023 Annual,SRC_EUROSTAT_BOPITS6,https://ec.europa.eu/eurostat/databrowser/view/BOP_ITS6_DET/
+SE,Construction Services,1272.000,373.000,2023 Annual,SRC_EUROSTAT_BOPITS6,https://ec.europa.eu/eurostat/databrowser/view/BOP_ITS6_DET/
+SF,Insurance & Pensions,199.000,783.000,2023 Annual,SRC_EUROSTAT_BOPITS6,https://ec.europa.eu/eurostat/databrowser/view/BOP_ITS6_DET/
+SG,Financial Services,614.000,606.000,2023 Annual,SRC_EUROSTAT_BOPITS6,https://ec.europa.eu/eurostat/databrowser/view/BOP_ITS6_DET/
+SH,IP Licensing,175.000,938.000,2023 Annual,SRC_EUROSTAT_BOPITS6,https://ec.europa.eu/eurostat/databrowser/view/BOP_ITS6_DET/
+SI,Telecom & IT Services,4599.000,1863.000,2023 Annual,SRC_EUROSTAT_BOPITS6,https://ec.europa.eu/eurostat/databrowser/view/BOP_ITS6_DET/
+SJ,Other Business Services,8581.000,6195.000,2023 Annual,SRC_EUROSTAT_BOPITS6,https://ec.europa.eu/eurostat/databrowser/view/BOP_ITS6_DET/
+SK,Culture & Recreation,624.000,618.000,2023 Annual,SRC_EUROSTAT_BOPITS6,https://ec.europa.eu/eurostat/databrowser/view/BOP_ITS6_DET/
+SL,Government Services (n.i.e.),185.000,71.000,2023 Annual,SRC_EUROSTAT_BOPITS6,https://ec.europa.eu/eurostat/databrowser/view/BOP_ITS6_DET/
+SN,Unallocated Services,0.000,0.000,2023 Annual,SRC_EUROSTAT_BOPITS6,https://ec.europa.eu/eurostat/databrowser/view/BOP_ITS6_DET/

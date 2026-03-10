@@ -43,6 +43,7 @@ const EDGE_MODE_BEHAVIORAL = 'behavioral_contribution';
 const EDGE_MODE_ACCOUNTING = 'accounting_trace';
 const EDGE_MODE_ALLOWED = new Set([EDGE_MODE_BEHAVIORAL, EDGE_MODE_ACCOUNTING]);
 const TRADE_HS_NODE_PATTERN = /^(exports|imports)_goods_hs(\d{2})_eur_m$/;
+const TRADE_SERVICE_EBOPS_NODE_PATTERN = /^(exports|imports)_services_ebops_([a-z]{2})_eur_m$/;
 
 function getTradeComponentNodeIds(flowPrefix, otherNodeId) {
     const hsNodes = [...knownNodeIds]
@@ -60,6 +61,24 @@ function getTradeComponentNodeIds(flowPrefix, otherNodeId) {
     }
 
     return hsNodes;
+}
+
+function getServiceComponentNodeIds(flowPrefix, otherNodeId) {
+    const serviceNodes = [...knownNodeIds]
+        .filter((nodeId) => nodeId.startsWith(flowPrefix) && TRADE_SERVICE_EBOPS_NODE_PATTERN.test(nodeId))
+        .sort((a, b) => {
+            const aMatch = a.match(/ebops_([a-z]{2})_eur_m$/);
+            const bMatch = b.match(/ebops_([a-z]{2})_eur_m$/);
+            const aCode = aMatch ? aMatch[1] : '';
+            const bCode = bMatch ? bMatch[1] : '';
+            return aCode.localeCompare(bCode);
+        });
+
+    if (otherNodeId && knownNodeIds.has(otherNodeId)) {
+        serviceNodes.push(otherNodeId);
+    }
+
+    return serviceNodes;
 }
 
 
@@ -1635,6 +1654,8 @@ function recomputeDerivedEconomyMetrics(state) {
 
     const exportGoodsComponentNodeIds = getTradeComponentNodeIds('exports_goods_hs', 'exports_goods_other_eur_m');
     const importGoodsComponentNodeIds = getTradeComponentNodeIds('imports_goods_hs', 'imports_goods_other_eur_m');
+    const exportServiceComponentNodeIds = getServiceComponentNodeIds('exports_services_ebops_', 'exports_services_other_eur_m');
+    const importServiceComponentNodeIds = getServiceComponentNodeIds('imports_services_ebops_', 'imports_services_other_eur_m');
 
     const exportsGoodsTotalByComponents = exportGoodsComponentNodeIds.reduce((sum, nodeId) => {
         const value = Number(getStateValueByNodeId(state, nodeId));
@@ -1649,6 +1670,21 @@ function recomputeDerivedEconomyMetrics(state) {
     }
     if (Number.isFinite(importsGoodsTotalByComponents) && importsGoodsTotalByComponents > 0) {
         state.economy.imports_goods_total_eur_m = importsGoodsTotalByComponents;
+    }
+
+    const exportsServicesTotalByComponents = exportServiceComponentNodeIds.reduce((sum, nodeId) => {
+        const value = Number(getStateValueByNodeId(state, nodeId));
+        return sum + (Number.isFinite(value) ? value : 0);
+    }, 0);
+    const importsServicesTotalByComponents = importServiceComponentNodeIds.reduce((sum, nodeId) => {
+        const value = Number(getStateValueByNodeId(state, nodeId));
+        return sum + (Number.isFinite(value) ? value : 0);
+    }, 0);
+    if (exportServiceComponentNodeIds.length > 0 && Number.isFinite(exportsServicesTotalByComponents) && exportsServicesTotalByComponents >= 0) {
+        state.economy.exports_services_total_eur_m = exportsServicesTotalByComponents;
+    }
+    if (importServiceComponentNodeIds.length > 0 && Number.isFinite(importsServicesTotalByComponents) && importsServicesTotalByComponents >= 0) {
+        state.economy.imports_services_total_eur_m = importsServicesTotalByComponents;
     }
 
     const exportsGoodsValue = Number(getStateValueByNodeId(state, 'exports_goods_total_eur_m'));
