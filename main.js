@@ -263,6 +263,10 @@ function ensureGraphPhysicsPanel() {
         <input id="phys-link" type="range" min="0.05" max="0.5" step="0.01">
         <label>Link Distance <span id="phys-dist-val"></span></label>
         <input id="phys-dist" type="range" min="120" max="320" step="5">
+        <label>Edge Repel <span id="phys-edge-repel-val"></span></label>
+        <input id="phys-edge-repel" type="range" min="0" max="0.8" step="0.01">
+        <label>Edge Padding <span id="phys-edge-pad-val"></span></label>
+        <input id="phys-edge-pad" type="range" min="0" max="28" step="1">
         <button id="phys-reset-btn" type="button">Reset Defaults</button>
     `;
 
@@ -276,6 +280,8 @@ function bindGraphPhysicsPanel() {
     const gravity = document.getElementById('phys-gravity');
     const link = document.getElementById('phys-link');
     const distance = document.getElementById('phys-dist');
+    const edgeRepel = document.getElementById('phys-edge-repel');
+    const edgePad = document.getElementById('phys-edge-pad');
     const resetBtn = document.getElementById('phys-reset-btn');
 
     if (charge) {
@@ -304,17 +310,31 @@ function bindGraphPhysicsPanel() {
             syncGraphPhysicsPanelValues();
         });
     }
+    if (edgeRepel) {
+        edgeRepel.addEventListener('input', () => {
+            setGraphPhysicsSettings({ edgeRepulsionStrength: parseFloat(edgeRepel.value) });
+            syncGraphPhysicsPanelValues();
+        });
+    }
+    if (edgePad) {
+        edgePad.addEventListener('input', () => {
+            setGraphPhysicsSettings({ edgeRepulsionPadding: parseFloat(edgePad.value) });
+            syncGraphPhysicsPanelValues();
+        });
+    }
     if (resetBtn) {
         resetBtn.addEventListener('click', () => {
             setGraphPhysicsSettings({
-                chargeStrength: -210,
-                gravityStrength: 0.045,
+                chargeStrength: -300,
+                gravityStrength: 0.020,
                 collisionStrength: 0.85,
                 collisionPadding: 12,
                 linkDistanceFar: 230,
                 linkDistanceNear: 130,
                 linkStrengthMin: 0.04,
-                linkStrengthMax: 0.28
+                linkStrengthMax: 0.30,
+                edgeRepulsionStrength: 0.15,
+                edgeRepulsionPadding: 9
             });
             syncGraphPhysicsPanelValues();
         });
@@ -329,21 +349,29 @@ function syncGraphPhysicsPanelValues() {
     const gravity = document.getElementById('phys-gravity');
     const link = document.getElementById('phys-link');
     const distance = document.getElementById('phys-dist');
+    const edgeRepel = document.getElementById('phys-edge-repel');
+    const edgePad = document.getElementById('phys-edge-pad');
 
     if (charge) charge.value = settings.chargeStrength;
     if (gravity) gravity.value = settings.gravityStrength;
     if (link) link.value = settings.linkStrengthMax;
     if (distance) distance.value = settings.linkDistanceFar;
+    if (edgeRepel) edgeRepel.value = Number.isFinite(settings.edgeRepulsionStrength) ? settings.edgeRepulsionStrength : 0.15;
+    if (edgePad) edgePad.value = Number.isFinite(settings.edgeRepulsionPadding) ? settings.edgeRepulsionPadding : 9;
 
     const chargeVal = document.getElementById('phys-charge-val');
     const gravityVal = document.getElementById('phys-gravity-val');
     const linkVal = document.getElementById('phys-link-val');
     const distVal = document.getElementById('phys-dist-val');
+    const edgeRepelVal = document.getElementById('phys-edge-repel-val');
+    const edgePadVal = document.getElementById('phys-edge-pad-val');
 
     if (chargeVal) chargeVal.textContent = `${settings.chargeStrength.toFixed(0)}`;
     if (gravityVal) gravityVal.textContent = `${settings.gravityStrength.toFixed(3)}`;
     if (linkVal) linkVal.textContent = `${settings.linkStrengthMax.toFixed(2)}`;
     if (distVal) distVal.textContent = `${settings.linkDistanceFar.toFixed(0)}px`;
+    if (edgeRepelVal) edgeRepelVal.textContent = `${(Number.isFinite(settings.edgeRepulsionStrength) ? settings.edgeRepulsionStrength : 0.15).toFixed(2)}`;
+    if (edgePadVal) edgePadVal.textContent = `${(Number.isFinite(settings.edgeRepulsionPadding) ? settings.edgeRepulsionPadding : 9).toFixed(0)}px`;
 }
 
 function toggleGraphPhysicsPanel() {

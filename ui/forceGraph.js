@@ -26,7 +26,9 @@ const defaultPhysicsSettings = {
     linkDistanceFar: 230,
     linkDistanceNear: 130,
     linkStrengthMin: 0.04,
-    linkStrengthMax: 0.30
+    linkStrengthMax: 0.30,
+    edgeRepulsionStrength: 0.15,
+    edgeRepulsionPadding: 9
 };
 
 // Absolute visual scale for relationship intensity.
@@ -497,6 +499,88 @@ function getLinkPath(link) {
     return `M ${sx},${sy} Q ${cx},${cy} ${tx},${ty}`;
 }
 
+function createEdgeRepulsionForce(links, settings) {
+    let nodes = [];
+
+    const minVisibleMagnitude = 0.001;
+    const strength = Math.max(0, Number(settings?.edgeRepulsionStrength) || 0);
+    const padding = Math.max(0, Number(settings?.edgeRepulsionPadding) || 0);
+
+    function force(alpha) {
+        if (strength <= 0 || !nodes.length || !links.length) return;
+        const alphaStrength = alpha * strength;
+        if (alphaStrength <= 0.000001) return;
+
+        for (let linkIndex = 0; linkIndex < links.length; linkIndex++) {
+            const link = links[linkIndex];
+            const rawMagnitude = Number(link?.magnitude);
+            const magnitude = Number.isFinite(rawMagnitude) ? rawMagnitude : 0;
+            if (magnitude < minVisibleMagnitude) continue;
+
+            const source = link.source;
+            const target = link.target;
+            if (!source || !target) continue;
+
+            const sx = source.x;
+            const sy = source.y;
+            const tx = target.x;
+            const ty = target.y;
+            if (![sx, sy, tx, ty].every(Number.isFinite)) continue;
+
+            const segX = tx - sx;
+            const segY = ty - sy;
+            const segLengthSq = (segX * segX) + (segY * segY);
+            if (segLengthSq < 0.000001) continue;
+
+            const edgeThickness = 0.9 + (Math.sqrt(Math.min(LINK_VISUAL_MAGNITUDE_MAX, Math.max(0, magnitude))) * 3.45);
+
+            for (let nodeIndex = 0; nodeIndex < nodes.length; nodeIndex++) {
+                const node = nodes[nodeIndex];
+                if (!node || node === source || node === target) continue;
+                if (!Number.isFinite(node.x) || !Number.isFinite(node.y)) continue;
+
+                const clearance = getNodeRadius(node) + padding + (edgeThickness * 0.5);
+                const minX = Math.min(sx, tx) - clearance;
+                const maxX = Math.max(sx, tx) + clearance;
+                const minY = Math.min(sy, ty) - clearance;
+                const maxY = Math.max(sy, ty) + clearance;
+                if (node.x < minX || node.x > maxX || node.y < minY || node.y > maxY) continue;
+
+                const projectionRaw = ((node.x - sx) * segX + (node.y - sy) * segY) / segLengthSq;
+                const projection = Math.max(0, Math.min(1, projectionRaw));
+                const closestX = sx + (projection * segX);
+                const closestY = sy + (projection * segY);
+                const offX = node.x - closestX;
+                const offY = node.y - closestY;
+                const distance = Math.hypot(offX, offY);
+                if (distance >= clearance) continue;
+
+                const overlap = clearance - distance;
+                let normalX = 0;
+                let normalY = 0;
+                if (distance > 0.00001) {
+                    normalX = offX / distance;
+                    normalY = offY / distance;
+                } else {
+                    const segLength = Math.sqrt(segLengthSq) || 1;
+                    normalX = -segY / segLength;
+                    normalY = segX / segLength;
+                }
+
+                const impulse = overlap * alphaStrength;
+                node.vx += normalX * impulse;
+                node.vy += normalY * impulse;
+            }
+        }
+    }
+
+    force.initialize = function(initialNodes) {
+        nodes = initialNodes || [];
+    };
+
+    return force;
+}
+
 function applySimulationForces(nodes, links, width, height, maxMagnitude) {
     if (!forceGraphContext.simulation) return;
 
@@ -539,6 +623,7 @@ function applySimulationForces(nodes, links, width, height, maxMagnitude) {
                 .distance((d) => distanceScale(getLinkLayoutMagnitude(d)))
                 .strength((d) => strengthScale(getLinkLayoutMagnitude(d)))
         )
+        .force('edgeRepel', createEdgeRepulsionForce(links, settings))
         .on('tick', onTick);
 }
 
