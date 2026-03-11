@@ -13,7 +13,8 @@ Execution order:
    - `calculateBudget(state)` (deterministic authority for budget nodes)
 4. Derived deterministic recomputation:
    - `recomputeDerivedEconomyMetrics(state)`
-   - computes `government_demand`
+   - computes `government_expenditure` (total government expenditure)
+   - computes `gdp_gov_consumption_G_eur_m` (GDP component G)
    - computes deterministic GDP identity (`C+I+G+NX`)
    - recomputes `debt_to_gdp`
 5. Deterministic population recomputation:
@@ -33,3 +34,4 @@ Execution order:
 - Same code + same CSVs + same initial state => same no-policy trajectory.
 - Active relationships come from `engine/relationships.csv` only.
 - `engine/relationships_archive.csv` is non-runtime.
+

@@ -21,17 +21,19 @@ Authoritative runtime registries:
 
 Examples:
 - Budget accounting nodes: `budget.income`, `budget.expenditure`, `budget.deficit`, `budget.debt`
-- GDP identity nodes: `gdp`, `government_demand`
+- Government expenditure node: `government_expenditure`
+- GDP identity nodes: `gdp`, `gdp_gov_consumption_G_eur_m`
 - Derived ratio: `debt_to_gdp`
 - Population stock-flow nodes: `births_annual`, `deaths_annual`, `migration_in_annual`, `migration_out_annual`, `population_change_annual`, `population.total`
 
 ## GDP Ownership Contract
 GDP is deterministic and identity-owned:
-- `gdp = consumption + investment + government_demand + netExports`
+- `gdp = consumption + investment + gdp_gov_consumption_G_eur_m + netExports`
 
 Where:
 - `consumption`, `investment`, `netExports` are million-EUR component nodes.
-- `government_demand` is deterministic, computed from policy expenditure entries using `gdp_demand_share`.
+- `government_expenditure` is deterministic total government expenditure (COFOG-mapped aggregate).
+- `gdp_gov_consumption_G_eur_m` is deterministic GDP component `G`, computed from policy expenditure entries using `gdp_demand_share`.
 
 ## Normalization Model
 - Simulation-enabled metric nodes use `min/max` normalization.
@@ -40,3 +42,4 @@ Where:
 ## Inertia Behavior
 - Only simulation-enabled nodes use inertia stepping.
 - Effective inertia is scaled by equation-derived inbound magnitude hints.
+

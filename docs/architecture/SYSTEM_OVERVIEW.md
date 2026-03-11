@@ -26,7 +26,7 @@
 - Deterministic accounting model: precision-critical accounting nodes are calculated by arithmetic helpers, with required edge sets enforced for structural governance.
 - Budget uses deterministic arithmetic authority (`calculateBudget`) with fail-fast required-edge validation.
 - GDP uses deterministic identity authority (`recomputeDerivedEconomyMetrics`):
-  - `gdp = consumption + investment + government_demand + netExports`
+  - `gdp = consumption + investment + gdp_gov_consumption_G_eur_m + netExports`
 
 ## Source-of-Truth Ownership
 - Policy identity/mutability/bounds/initial values/fiscal coefficients: `engine/policies.csv`
@@ -39,3 +39,4 @@
 ## Determinism Expectations
 - No-policy runs should be deterministic given fixed files and code.
 - Validation should always use fixed turn horizon (typically 60 turns) and identical startup state.
+

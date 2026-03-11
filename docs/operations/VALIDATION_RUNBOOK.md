@@ -31,14 +31,15 @@ Run 60-turn no-policy simulation and verify:
 - no NaN/Infinity
 - run completes without load/runtime errors
 - GDP identity holds each turn:
-  - `abs(gdp - (consumption + investment + government_demand + netExports)) <= 1e-6`
+  - `abs(gdp - (consumption + investment + gdp_gov_consumption_G_eur_m + netExports)) <= 1e-6`
 - debt ratio consistency:
   - `debt_to_gdp == (budget.debt / gdp) * 100` (zero-safe)
 
 ## 4. Graph/UI Checks
 - graph loads without crashes
 - GDP has 4 accounting-trace inbound links (`C/I/G/NX`)
-- `government_demand` node renders with value
+- `government_expenditure` (total expenditure) node renders with value
+- `gdp_gov_consumption_G_eur_m` (GDP component G) node renders with value
 - mixed-sign `netExports -> gdp` link polarity follows live evaluated contribution sign when available
 
 ## 5. Failure Triage Order
@@ -47,3 +48,4 @@ Run 60-turn no-policy simulation and verify:
 3. Deterministic identity violations
 4. Numerical instability
 5. Stability drift
+

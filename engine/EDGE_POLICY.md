@@ -45,7 +45,7 @@ Startup must fail if any required edge is missing, wrong-sign, or wrong mode.
 ### GDP Identity Trace Chain
 - `consumption -> gdp` (positive)
 - `investment -> gdp` (positive)
-- `government_demand -> gdp` (positive)
+- `gdp_gov_consumption_G_eur_m -> gdp` (positive)
 - `netExports -> gdp` (mixed)
 
 ## 5. Active Registry Policy

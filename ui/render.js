@@ -147,11 +147,35 @@ function showMetricTooltip(event, node, state) {
         case 'investment':
             details = 'Business and capital formation climate';
             break;
+        case 'gdp_investment_gfcf_total_eur_m':
+            details = 'Total-economy GFCF anchor used for private/public investment split';
+            break;
+        case 'public_investment_p51g_eur_m':
+            details = 'Government gross fixed capital formation (P51G)';
+            break;
+        case 'private_investment_eur_m':
+            details = 'Private investment identity: GFCF total minus public P51G';
+            break;
         case 'netExports':
             details = 'Trade balance competitiveness channel';
             break;
-        case 'government_demand':
-            details = 'Deterministic government final demand component';
+        case 'government_expenditure':
+            details = 'Total government expenditure (COFOG-based deterministic aggregate)';
+            break;
+        case 'gdp_gov_consumption_G_eur_m':
+            details = 'Government final consumption component (G) used in GDP identity';
+            break;
+        case 'gdp_gov_exp_d4_interest_total_eur_m':
+            details = 'Government debt-interest outflow channel (D4) from split-flow weights';
+            break;
+        case 'household_transfer_income_d62_eur_m':
+            details = 'Household transfer inflow channel (D62) from split-flow weights';
+            break;
+        case 'household_consumption_from_transfers_eur_m':
+            details = 'Transfer-driven household consumption = D62 * MPC';
+            break;
+        case 'household_savings_from_transfers_eur_m':
+            details = 'Transfer-driven household savings = D62 * (1 - MPC)';
             break;
         case 'rentBurden':
             details = 'Household rent pressure index';
@@ -484,5 +508,3 @@ window.addEventListener('scroll', hideTooltip, true);
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) hideTooltip();
 });
-
-

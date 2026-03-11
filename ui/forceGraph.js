@@ -1,4 +1,4 @@
-﻿// D3 force graph renderer for policy and metric nodes.
+// D3 force graph renderer for policy and metric nodes.
 // This file contains ONLY visualization/simulation lifecycle logic.
 
 let forceGraphContext = {
@@ -82,8 +82,17 @@ const NODE_ICON_BY_ID = {
     inflation_consumer_prices: '\u{1F4CA}',
     consumption: '\u{1F6D2}',
     investment: '\u{1F3D7}\uFE0F',
+    gdp_investment_gfcf_total_eur_m: '\u{1F3D7}\uFE0F',
+    public_investment_p51g_eur_m: '\u{1F3D7}\uFE0F',
+    private_investment_eur_m: '\u{1F3D7}\uFE0F',
     netExports: '\u{1F6A2}',
-    government_demand: '\u{1F3DB}\uFE0F',
+    government_expenditure: '\u{1F3DB}\uFE0F',
+    gdp_gov_consumption_G_eur_m: '\u{1F3DB}\uFE0F',
+    gdp_gov_exp_d4_interest_total_eur_m: '\u{1F4B8}',
+    household_transfer_income_d62_eur_m: '\u{1F4B8}',
+    household_consumption_from_transfers_eur_m: '\u{1F6D2}',
+    household_savings_from_transfers_eur_m: '\u{1F4B0}',
+    mpc_rate: '\u{1F4CA}',
     rentBurden: '\u{1F3D8}\uFE0F',
     youthIndependence: '\u{1F3E1}',
     average_annual_real_wages: '\u{1F4B6}',
@@ -103,9 +112,9 @@ function formatMetricValueByUnit(value, unit) {
     if (!Number.isFinite(value)) return 'n/a';
     switch (unit) {
         case 'eur_b':
-            return `€${(value / 1000).toFixed(1)}B`;
+            return `\u20AC${(value / 1000).toFixed(1)}B`;
         case 'eur_int':
-            return `€${Math.round(value).toLocaleString()}`;
+            return `\u20AC${Math.round(value).toLocaleString()}`;
         case 'int':
             return `${Math.round(value).toLocaleString()}`;
         case 'percent':
@@ -723,16 +732,8 @@ function renderForceGraph(state) {
         .attr('data-equation', (d) => d.equation || '')
         .attr('stroke', (d) => getEdgeStrokeColor(d))
         .attr('stroke-width', (d) => thicknessScale(d.magnitude))
-        .attr('marker-end', (d) => (
-            d.magnitude < 0.001
-                ? null
-                : getEdgeMarkerId(d)
-        ))
-        .attr('stroke-opacity', (d) => (
-            d.magnitude < 0.001
-                ? 0
-                : Math.min(0.95, 0.30 + (d.magnitude / LINK_VISUAL_MAGNITUDE_MAX))
-        ));
+        .attr('marker-end', (d) => getEdgeMarkerId(d))
+        .attr('stroke-opacity', (d) => Math.min(0.95, Math.max(0.14, 0.30 + (d.magnitude / LINK_VISUAL_MAGNITUDE_MAX))));
 
     forceGraphContext.linkSelection
         .selectAll('title')
@@ -908,10 +909,3 @@ function destroyForceGraph() {
         lastTopologySignature: ''
     };
 }
-
-
-
-
-
-
-

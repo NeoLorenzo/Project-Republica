@@ -79,7 +79,7 @@ Runtime blocks startup if any required accounting edge is missing or wrong-sign:
 - `gdp -> debt_to_gdp` (negative)
 - `consumption -> gdp` (positive)
 - `investment -> gdp` (positive)
-- `government_demand -> gdp` (positive)
+- `gdp_gov_consumption_G_eur_m -> gdp` (positive)
 - `netExports -> gdp` (mixed)
 
 ## Runtime Failure Modes
@@ -92,3 +92,4 @@ Load must fail with actionable errors for:
 - duplicate/self-link violations
 - any row with `status != approved`
 - missing required accounting edges or wrong signs
+

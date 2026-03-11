@@ -55,8 +55,8 @@ async function initializeRelationshipsAndStartGate() {
         await loadPoliciesCsv();
         await loadMetricsCsv();
         await loadCalibrationTargetsCsv();
-        initializeGameState();
         await loadRelationshipsCsv();
+        initializeGameState();
         setStartButtonState('ready');
     } catch (error) {
         console.error('Failed to load startup CSV registries:', error);

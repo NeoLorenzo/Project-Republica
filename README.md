@@ -22,8 +22,8 @@ http://localhost:8000
 - `main.js`: app wiring and startup flow
 
 ## Runtime Source-of-Truth Files
-- `engine/policies.csv`: authoritative policy registry (includes fiscal coefficients and `gdp_demand_share` for deterministic government-demand mapping)
-- `engine/metrics.csv`: authoritative metric registry (includes deterministic `gdp` and `government_demand` nodes)
+- `engine/policies.csv`: authoritative policy registry (includes fiscal coefficients and `gdp_demand_share` for deterministic GDP government-consumption (`G`) mapping)
+- `engine/metrics.csv`: authoritative metric registry (includes deterministic `gdp`, `government_expenditure`, and `gdp_gov_consumption_G_eur_m` nodes)
 - `engine/relationships.csv`: active equation-only edge registry (approved rows only)
 - `engine/relationships_archive.csv`: non-runtime archive of rejected/historical edge rows
 - `engine/calibration_targets_template.csv`: calibration targets plus metric mapping metadata
@@ -44,5 +44,5 @@ Key deep links:
 ## Notes
 - Budget accounting values (`budget.income`, `budget.expenditure`, `budget.deficit`, `budget.debt`) are computed by deterministic arithmetic (`calculateBudget()`).
 - GDP is deterministic and identity-owned in `recomputeDerivedEconomyMetrics()`:
-  - `gdp = consumption + investment + government_demand + netExports`
+  - `gdp = consumption + investment + gdp_gov_consumption_G_eur_m + netExports`
 - Behavioral edges use equation-based contribution runtime with a restricted DSL and no legacy weight fallback.
