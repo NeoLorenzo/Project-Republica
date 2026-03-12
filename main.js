@@ -263,10 +263,14 @@ function ensureGraphPhysicsPanel() {
         <input id="phys-link" type="range" min="0.05" max="0.5" step="0.01">
         <label>Link Distance <span id="phys-dist-val"></span></label>
         <input id="phys-dist" type="range" min="120" max="320" step="5">
-        <label>Edge Repel <span id="phys-edge-repel-val"></span></label>
-        <input id="phys-edge-repel" type="range" min="0" max="0.8" step="0.01">
-        <label>Edge Padding <span id="phys-edge-pad-val"></span></label>
-        <input id="phys-edge-pad" type="range" min="0" max="28" step="1">
+        <label>Node Names <span id="phys-node-names-val"></span></label>
+        <input id="phys-node-names" type="checkbox">
+        <label>Node Values <span id="phys-node-values-val"></span></label>
+        <input id="phys-node-values" type="checkbox">
+        <label>Hide Gov/Budget <span id="phys-hide-gov-budget-val"></span></label>
+        <input id="phys-hide-gov-budget" type="checkbox">
+        <label>Hide GDP Node <span id="phys-hide-gdp-val"></span></label>
+        <input id="phys-hide-gdp" type="checkbox">
         <button id="phys-reset-btn" type="button">Reset Defaults</button>
     `;
 
@@ -280,8 +284,10 @@ function bindGraphPhysicsPanel() {
     const gravity = document.getElementById('phys-gravity');
     const link = document.getElementById('phys-link');
     const distance = document.getElementById('phys-dist');
-    const edgeRepel = document.getElementById('phys-edge-repel');
-    const edgePad = document.getElementById('phys-edge-pad');
+    const nodeNames = document.getElementById('phys-node-names');
+    const nodeValues = document.getElementById('phys-node-values');
+    const hideGovBudget = document.getElementById('phys-hide-gov-budget');
+    const hideGdp = document.getElementById('phys-hide-gdp');
     const resetBtn = document.getElementById('phys-reset-btn');
 
     if (charge) {
@@ -310,15 +316,27 @@ function bindGraphPhysicsPanel() {
             syncGraphPhysicsPanelValues();
         });
     }
-    if (edgeRepel) {
-        edgeRepel.addEventListener('input', () => {
-            setGraphPhysicsSettings({ edgeRepulsionStrength: parseFloat(edgeRepel.value) });
+    if (nodeNames) {
+        nodeNames.addEventListener('change', () => {
+            setGraphPhysicsSettings({ showNodeNameLabels: !!nodeNames.checked });
             syncGraphPhysicsPanelValues();
         });
     }
-    if (edgePad) {
-        edgePad.addEventListener('input', () => {
-            setGraphPhysicsSettings({ edgeRepulsionPadding: parseFloat(edgePad.value) });
+    if (nodeValues) {
+        nodeValues.addEventListener('change', () => {
+            setGraphPhysicsSettings({ showNodeValueLabels: !!nodeValues.checked });
+            syncGraphPhysicsPanelValues();
+        });
+    }
+    if (hideGovBudget) {
+        hideGovBudget.addEventListener('change', () => {
+            setGraphPhysicsSettings({ hideGovBudgetNodes: !!hideGovBudget.checked });
+            syncGraphPhysicsPanelValues();
+        });
+    }
+    if (hideGdp) {
+        hideGdp.addEventListener('change', () => {
+            setGraphPhysicsSettings({ hideGdpNodes: !!hideGdp.checked });
             syncGraphPhysicsPanelValues();
         });
     }
@@ -333,8 +351,10 @@ function bindGraphPhysicsPanel() {
                 linkDistanceNear: 130,
                 linkStrengthMin: 0.04,
                 linkStrengthMax: 0.30,
-                edgeRepulsionStrength: 0.15,
-                edgeRepulsionPadding: 9
+                showNodeNameLabels: true,
+                showNodeValueLabels: true,
+                hideGovBudgetNodes: false,
+                hideGdpNodes: false
             });
             syncGraphPhysicsPanelValues();
         });
@@ -349,29 +369,37 @@ function syncGraphPhysicsPanelValues() {
     const gravity = document.getElementById('phys-gravity');
     const link = document.getElementById('phys-link');
     const distance = document.getElementById('phys-dist');
-    const edgeRepel = document.getElementById('phys-edge-repel');
-    const edgePad = document.getElementById('phys-edge-pad');
+    const nodeNames = document.getElementById('phys-node-names');
+    const nodeValues = document.getElementById('phys-node-values');
+    const hideGovBudget = document.getElementById('phys-hide-gov-budget');
+    const hideGdp = document.getElementById('phys-hide-gdp');
 
     if (charge) charge.value = settings.chargeStrength;
     if (gravity) gravity.value = settings.gravityStrength;
     if (link) link.value = settings.linkStrengthMax;
     if (distance) distance.value = settings.linkDistanceFar;
-    if (edgeRepel) edgeRepel.value = Number.isFinite(settings.edgeRepulsionStrength) ? settings.edgeRepulsionStrength : 0.15;
-    if (edgePad) edgePad.value = Number.isFinite(settings.edgeRepulsionPadding) ? settings.edgeRepulsionPadding : 9;
+    if (nodeNames) nodeNames.checked = settings.showNodeNameLabels !== false;
+    if (nodeValues) nodeValues.checked = settings.showNodeValueLabels !== false;
+    if (hideGovBudget) hideGovBudget.checked = settings.hideGovBudgetNodes === true;
+    if (hideGdp) hideGdp.checked = settings.hideGdpNodes === true;
 
     const chargeVal = document.getElementById('phys-charge-val');
     const gravityVal = document.getElementById('phys-gravity-val');
     const linkVal = document.getElementById('phys-link-val');
     const distVal = document.getElementById('phys-dist-val');
-    const edgeRepelVal = document.getElementById('phys-edge-repel-val');
-    const edgePadVal = document.getElementById('phys-edge-pad-val');
+    const nodeNamesVal = document.getElementById('phys-node-names-val');
+    const nodeValuesVal = document.getElementById('phys-node-values-val');
+    const hideGovBudgetVal = document.getElementById('phys-hide-gov-budget-val');
+    const hideGdpVal = document.getElementById('phys-hide-gdp-val');
 
     if (chargeVal) chargeVal.textContent = `${settings.chargeStrength.toFixed(0)}`;
     if (gravityVal) gravityVal.textContent = `${settings.gravityStrength.toFixed(3)}`;
     if (linkVal) linkVal.textContent = `${settings.linkStrengthMax.toFixed(2)}`;
     if (distVal) distVal.textContent = `${settings.linkDistanceFar.toFixed(0)}px`;
-    if (edgeRepelVal) edgeRepelVal.textContent = `${(Number.isFinite(settings.edgeRepulsionStrength) ? settings.edgeRepulsionStrength : 0.15).toFixed(2)}`;
-    if (edgePadVal) edgePadVal.textContent = `${(Number.isFinite(settings.edgeRepulsionPadding) ? settings.edgeRepulsionPadding : 9).toFixed(0)}px`;
+    if (nodeNamesVal) nodeNamesVal.textContent = settings.showNodeNameLabels === false ? 'Off' : 'On';
+    if (nodeValuesVal) nodeValuesVal.textContent = settings.showNodeValueLabels === false ? 'Off' : 'On';
+    if (hideGovBudgetVal) hideGovBudgetVal.textContent = settings.hideGovBudgetNodes === true ? 'On' : 'Off';
+    if (hideGdpVal) hideGdpVal.textContent = settings.hideGdpNodes === true ? 'On' : 'Off';
 }
 
 function toggleGraphPhysicsPanel() {

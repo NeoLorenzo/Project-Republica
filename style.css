@@ -636,6 +636,11 @@ body {
     margin-bottom: 0.2rem;
 }
 
+.physics-panel input[type="checkbox"] {
+    margin: 0 0 0.3rem 0;
+    accent-color: var(--economy);
+}
+
 #phys-reset-btn {
     margin-top: 0.4rem;
     border: 1px solid var(--glass-border);

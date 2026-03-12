@@ -27,8 +27,10 @@ const defaultPhysicsSettings = {
     linkDistanceNear: 130,
     linkStrengthMin: 0.04,
     linkStrengthMax: 0.30,
-    edgeRepulsionStrength: 0.15,
-    edgeRepulsionPadding: 9
+    showNodeNameLabels: true,
+    showNodeValueLabels: true,
+    hideGovBudgetNodes: false,
+    hideGdpNodes: false
 };
 
 // Absolute visual scale for relationship intensity.
@@ -108,6 +110,16 @@ const NODE_ICON_BY_ID = {
     'population.total': '\u{1F465}'
 };
 
+const GOV_BUDGET_NODE_IDS = new Set([
+    'government_expenditure',
+    'govt_revenue_total_eur_m',
+    'budget.deficit'
+]);
+
+const GDP_NODE_IDS = new Set([
+    'gdp'
+]);
+
 function formatMetricValueByUnit(value, unit) {
     if (!Number.isFinite(value)) return 'n/a';
     switch (unit) {
@@ -150,9 +162,32 @@ function resolveNodeIcon(row) {
     return row.nodeType === 'policy' ? '\u2699\uFE0F' : '\u{1F4CA}';
 }
 
+function shouldHideGovBudgetNodes(settingsOverride) {
+    const settings = settingsOverride || forceGraphContext.physicsSettings || defaultPhysicsSettings;
+    return settings.hideGovBudgetNodes === true;
+}
+
+function shouldHideGdpNodes(settingsOverride) {
+    const settings = settingsOverride || forceGraphContext.physicsSettings || defaultPhysicsSettings;
+    return settings.hideGdpNodes === true;
+}
+
+function getHiddenNodeIds(settingsOverride) {
+    const hiddenNodeIds = new Set();
+    if (shouldHideGovBudgetNodes(settingsOverride)) {
+        GOV_BUDGET_NODE_IDS.forEach((nodeId) => hiddenNodeIds.add(nodeId));
+    }
+    if (shouldHideGdpNodes(settingsOverride)) {
+        GDP_NODE_IDS.forEach((nodeId) => hiddenNodeIds.add(nodeId));
+    }
+    return hiddenNodeIds;
+}
+
 function buildGraphNodes(state) {
+    const hiddenNodeIds = getHiddenNodeIds();
     return getRegistryGraphRows()
         .map((row) => {
+            if (hiddenNodeIds.has(row.nodeId)) return null;
             const rawValue = getNodeStateNumericValue(state, row.nodeId);
             if (!Number.isFinite(rawValue)) return null;
             const formattedValue = formatMetricValueByUnit(rawValue, row.valueUnit);
@@ -170,7 +205,114 @@ function buildGraphNodes(state) {
 }
 
 function getNodeRadius(node) {
-    return node.visualRadius || (node.nodeType === 'metric' ? 36 : 42);
+    const settings = forceGraphContext.physicsSettings || defaultPhysicsSettings;
+    const showNodeNameLabels = settings.showNodeNameLabels !== false;
+    const showNodeValueLabels = settings.showNodeValueLabels !== false;
+    const visibleTextCount = (showNodeNameLabels ? 1 : 0) + (showNodeValueLabels ? 1 : 0);
+
+    const contentScale = visibleTextCount === 0
+        ? 0.80
+        : (visibleTextCount === 1 ? 0.90 : 1.00);
+    const baseRadius = node.visualRadius || (node.nodeType === 'metric' ? 36 : 42);
+    return baseRadius * contentScale;
+}
+
+function getScaledVerticalStack(itemSizes, gap, radius, edgePadding) {
+    const rawTotal = itemSizes.reduce((sum, size) => sum + size, 0) + (Math.max(0, itemSizes.length - 1) * gap);
+    const availableHeight = Math.max(1, (radius - edgePadding) * 2);
+    const fitScale = rawTotal > availableHeight ? (availableHeight / rawTotal) : 1;
+    const sizes = itemSizes.map((size) => size * fitScale);
+    const scaledGap = gap * fitScale;
+    const total = sizes.reduce((sum, size) => sum + size, 0) + (Math.max(0, sizes.length - 1) * scaledGap);
+
+    let cursor = -total / 2;
+    const centers = [];
+    sizes.forEach((size) => {
+        centers.push(cursor + (size * 0.5));
+        cursor += size + scaledGap;
+    });
+
+    return { sizes, centers };
+}
+
+function getNodeTextLayout(node) {
+    const settings = forceGraphContext.physicsSettings || defaultPhysicsSettings;
+    const showNodeNameLabels = settings.showNodeNameLabels !== false;
+    const showNodeValueLabels = settings.showNodeValueLabels !== false;
+    const visibleTextCount = (showNodeNameLabels ? 1 : 0) + (showNodeValueLabels ? 1 : 0);
+    const radius = getNodeRadius(node);
+    const edgePadding = radius * 0.14;
+    const stackGap = radius * (visibleTextCount === 2 ? 0.12 : 0.15);
+    // Keep icon growth slightly ahead of text growth, with an extra bump in icon-only mode.
+    const iconBaseSize = radius * (visibleTextCount === 0 ? 0.74 : (visibleTextCount === 1 ? 0.58 : 0.49));
+    const nameBaseSize = radius * 0.23;
+    const valueBaseSize = radius * 0.20;
+
+    if (showNodeNameLabels && showNodeValueLabels) {
+        const stack = getScaledVerticalStack([iconBaseSize, nameBaseSize, valueBaseSize], stackGap, radius, edgePadding);
+        return {
+            showNodeNameLabels,
+            showNodeValueLabels,
+            iconY: stack.centers[0],
+            nameY: stack.centers[1],
+            valueY: stack.centers[2],
+            iconSize: stack.sizes[0],
+            nameSize: stack.sizes[1],
+            valueSize: stack.sizes[2]
+        };
+    }
+
+    if (showNodeNameLabels) {
+        const stack = getScaledVerticalStack([iconBaseSize, nameBaseSize], stackGap, radius, edgePadding);
+        return {
+            showNodeNameLabels,
+            showNodeValueLabels,
+            iconY: stack.centers[0],
+            nameY: stack.centers[1],
+            valueY: stack.centers[1],
+            iconSize: stack.sizes[0],
+            nameSize: stack.sizes[1],
+            valueSize: valueBaseSize
+        };
+    }
+
+    if (showNodeValueLabels) {
+        const stack = getScaledVerticalStack([iconBaseSize, valueBaseSize], stackGap, radius, edgePadding);
+        return {
+            showNodeNameLabels,
+            showNodeValueLabels,
+            iconY: stack.centers[0],
+            nameY: stack.centers[1],
+            valueY: stack.centers[1],
+            iconSize: stack.sizes[0],
+            nameSize: nameBaseSize,
+            valueSize: stack.sizes[1]
+        };
+    }
+
+    return {
+        showNodeNameLabels,
+        showNodeValueLabels,
+        iconY: 0,
+        nameY: 0,
+        valueY: 0,
+        iconSize: iconBaseSize,
+        nameSize: nameBaseSize,
+        valueSize: valueBaseSize
+    };
+}
+
+function getNodeBadgeLayout(node) {
+    const radius = getNodeRadius(node);
+    const badgeRadius = radius * 0.19;
+    const inset = radius * 0.05;
+    return {
+        badgeRadius,
+        cx: radius - badgeRadius - inset,
+        cy: -radius + badgeRadius + inset,
+        fontSize: badgeRadius * 0.95,
+        textY: -radius + badgeRadius + inset
+    };
 }
 
 function getEdgeSign(link) {
@@ -508,88 +650,6 @@ function getLinkPath(link) {
     return `M ${sx},${sy} Q ${cx},${cy} ${tx},${ty}`;
 }
 
-function createEdgeRepulsionForce(links, settings) {
-    let nodes = [];
-
-    const minVisibleMagnitude = 0.001;
-    const strength = Math.max(0, Number(settings?.edgeRepulsionStrength) || 0);
-    const padding = Math.max(0, Number(settings?.edgeRepulsionPadding) || 0);
-
-    function force(alpha) {
-        if (strength <= 0 || !nodes.length || !links.length) return;
-        const alphaStrength = alpha * strength;
-        if (alphaStrength <= 0.000001) return;
-
-        for (let linkIndex = 0; linkIndex < links.length; linkIndex++) {
-            const link = links[linkIndex];
-            const rawMagnitude = Number(link?.magnitude);
-            const magnitude = Number.isFinite(rawMagnitude) ? rawMagnitude : 0;
-            if (magnitude < minVisibleMagnitude) continue;
-
-            const source = link.source;
-            const target = link.target;
-            if (!source || !target) continue;
-
-            const sx = source.x;
-            const sy = source.y;
-            const tx = target.x;
-            const ty = target.y;
-            if (![sx, sy, tx, ty].every(Number.isFinite)) continue;
-
-            const segX = tx - sx;
-            const segY = ty - sy;
-            const segLengthSq = (segX * segX) + (segY * segY);
-            if (segLengthSq < 0.000001) continue;
-
-            const edgeThickness = 0.9 + (Math.sqrt(Math.min(LINK_VISUAL_MAGNITUDE_MAX, Math.max(0, magnitude))) * 3.45);
-
-            for (let nodeIndex = 0; nodeIndex < nodes.length; nodeIndex++) {
-                const node = nodes[nodeIndex];
-                if (!node || node === source || node === target) continue;
-                if (!Number.isFinite(node.x) || !Number.isFinite(node.y)) continue;
-
-                const clearance = getNodeRadius(node) + padding + (edgeThickness * 0.5);
-                const minX = Math.min(sx, tx) - clearance;
-                const maxX = Math.max(sx, tx) + clearance;
-                const minY = Math.min(sy, ty) - clearance;
-                const maxY = Math.max(sy, ty) + clearance;
-                if (node.x < minX || node.x > maxX || node.y < minY || node.y > maxY) continue;
-
-                const projectionRaw = ((node.x - sx) * segX + (node.y - sy) * segY) / segLengthSq;
-                const projection = Math.max(0, Math.min(1, projectionRaw));
-                const closestX = sx + (projection * segX);
-                const closestY = sy + (projection * segY);
-                const offX = node.x - closestX;
-                const offY = node.y - closestY;
-                const distance = Math.hypot(offX, offY);
-                if (distance >= clearance) continue;
-
-                const overlap = clearance - distance;
-                let normalX = 0;
-                let normalY = 0;
-                if (distance > 0.00001) {
-                    normalX = offX / distance;
-                    normalY = offY / distance;
-                } else {
-                    const segLength = Math.sqrt(segLengthSq) || 1;
-                    normalX = -segY / segLength;
-                    normalY = segX / segLength;
-                }
-
-                const impulse = overlap * alphaStrength;
-                node.vx += normalX * impulse;
-                node.vy += normalY * impulse;
-            }
-        }
-    }
-
-    force.initialize = function(initialNodes) {
-        nodes = initialNodes || [];
-    };
-
-    return force;
-}
-
 function applySimulationForces(nodes, links, width, height, maxMagnitude) {
     if (!forceGraphContext.simulation) return;
 
@@ -632,7 +692,6 @@ function applySimulationForces(nodes, links, width, height, maxMagnitude) {
                 .distance((d) => distanceScale(getLinkLayoutMagnitude(d)))
                 .strength((d) => strengthScale(getLinkLayoutMagnitude(d)))
         )
-        .force('edgeRepel', createEdgeRepulsionForce(links, settings))
         .on('tick', onTick);
 }
 
@@ -640,10 +699,91 @@ function getGraphPhysicsSettings() {
     return { ...(forceGraphContext.physicsSettings || defaultPhysicsSettings) };
 }
 
+function applyNodeVisualStyles() {
+    if (!forceGraphContext.nodeSelection) return;
+
+    forceGraphContext.nodeSelection.select('circle.force-node-ring')
+        .attr('r', (d) => {
+            const radius = getNodeRadius(d);
+            return radius + (d.nodeType === 'policy' ? (radius * 0.14) : (radius * 0.09));
+        })
+        .attr('fill', 'none')
+        .attr('stroke', (d) => d.color)
+        .attr('stroke-width', (d) => {
+            const radius = getNodeRadius(d);
+            return d.nodeType === 'policy' ? (radius * 0.071) : (radius * 0.047);
+        })
+        .attr('stroke-opacity', (d) => (d.nodeType === 'policy' ? 0.9 : 0.48))
+        .attr('stroke-dasharray', (d) => (d.nodeType === 'policy' ? '6 4' : null));
+
+    forceGraphContext.nodeSelection.select('circle.force-node-circle')
+        .attr('r', (d) => getNodeRadius(d))
+        .attr('fill', (d) => (d.nodeType === 'policy' ? '#352820' : '#1f2937'))
+        .attr('stroke', (d) => d.color)
+        .attr('stroke-width', (d) => {
+            const radius = getNodeRadius(d);
+            return d.nodeType === 'metric' ? (radius * 0.059) : (radius * 0.106);
+        });
+
+    forceGraphContext.nodeSelection.select('text.force-node-icon')
+        .attr('text-anchor', 'middle')
+        .attr('dominant-baseline', 'middle')
+        .attr('y', (d) => getNodeTextLayout(d).iconY)
+        .attr('font-size', (d) => `${getNodeTextLayout(d).iconSize.toFixed(1)}px`)
+        .text((d) => d.icon);
+
+    forceGraphContext.nodeSelection.select('text.force-node-label')
+        .attr('display', (d) => (getNodeTextLayout(d).showNodeNameLabels ? null : 'none'))
+        .attr('text-anchor', 'middle')
+        .attr('dominant-baseline', 'middle')
+        .attr('y', (d) => getNodeTextLayout(d).nameY)
+        .attr('font-size', (d) => `${getNodeTextLayout(d).nameSize.toFixed(1)}px`)
+        .attr('fill', '#ffffff')
+        .attr('font-weight', '600')
+        .text((d) => d.name);
+
+    forceGraphContext.nodeSelection.select('text.force-node-value')
+        .attr('display', (d) => (getNodeTextLayout(d).showNodeValueLabels ? null : 'none'))
+        .attr('text-anchor', 'middle')
+        .attr('dominant-baseline', 'middle')
+        .attr('y', (d) => getNodeTextLayout(d).valueY)
+        .attr('font-size', (d) => `${getNodeTextLayout(d).valueSize.toFixed(1)}px`)
+        .attr('fill', '#cccccc')
+        .text((d) => d.value);
+
+    forceGraphContext.nodeSelection.select('circle.force-node-type-badge-bg')
+        .attr('r', (d) => getNodeBadgeLayout(d).badgeRadius)
+        .attr('cx', (d) => getNodeBadgeLayout(d).cx)
+        .attr('cy', (d) => getNodeBadgeLayout(d).cy)
+        .attr('fill', (d) => (d.nodeType === 'policy' ? '#f59e0b' : '#60a5fa'))
+        .attr('stroke', '#0b0f17')
+        .attr('stroke-width', (d) => getNodeBadgeLayout(d).badgeRadius * 0.16);
+
+    forceGraphContext.nodeSelection.select('text.force-node-type-badge-label')
+        .attr('x', (d) => getNodeBadgeLayout(d).cx)
+        .attr('y', (d) => getNodeBadgeLayout(d).textY)
+        .attr('text-anchor', 'middle')
+        .attr('dominant-baseline', 'middle')
+        .attr('font-size', (d) => `${getNodeBadgeLayout(d).fontSize.toFixed(1)}px`)
+        .attr('font-weight', '800')
+        .attr('fill', '#0b0f17')
+        .text((d) => (d.nodeType === 'policy' ? 'P' : 'M'));
+}
+
 function setGraphPhysicsSettings(nextSettings) {
     const current = forceGraphContext.physicsSettings || { ...defaultPhysicsSettings };
+    const isGovBudgetVisibilitySettingChanged = Object.prototype.hasOwnProperty.call(nextSettings, 'hideGovBudgetNodes')
+        && (nextSettings.hideGovBudgetNodes !== current.hideGovBudgetNodes);
+    const isGdpVisibilitySettingChanged = Object.prototype.hasOwnProperty.call(nextSettings, 'hideGdpNodes')
+        && (nextSettings.hideGdpNodes !== current.hideGdpNodes);
     forceGraphContext.physicsSettings = { ...current, ...nextSettings };
+
     if (!forceGraphContext.simulation || !forceGraphContext.currentState) return;
+    if (isGovBudgetVisibilitySettingChanged || isGdpVisibilitySettingChanged) {
+        renderForceGraph(forceGraphContext.currentState);
+        return;
+    }
+    applyNodeVisualStyles();
 
     const nodes = forceGraphContext.simulation.nodes() || [];
     const nodeIds = new Set(nodes.map((node) => node.id));
@@ -821,58 +961,7 @@ function renderForceGraph(state) {
             }
         });
 
-    forceGraphContext.nodeSelection.select('circle.force-node-ring')
-        .attr('r', (d) => getNodeRadius(d) + (d.nodeType === 'policy' ? 6 : 3))
-        .attr('fill', 'none')
-        .attr('stroke', (d) => d.color)
-        .attr('stroke-width', (d) => (d.nodeType === 'policy' ? 2.6 : 1.6))
-        .attr('stroke-opacity', (d) => (d.nodeType === 'policy' ? 0.9 : 0.48))
-        .attr('stroke-dasharray', (d) => (d.nodeType === 'policy' ? '6 4' : null));
-
-    forceGraphContext.nodeSelection.select('circle.force-node-circle')
-        .attr('r', (d) => getNodeRadius(d))
-        .attr('fill', (d) => (d.nodeType === 'policy' ? '#352820' : '#1f2937'))
-        .attr('stroke', (d) => d.color)
-        .attr('stroke-width', (d) => (d.nodeType === 'metric' ? 2 : 3.6));
-
-    forceGraphContext.nodeSelection.select('text.force-node-icon')
-        .attr('text-anchor', 'middle')
-        .attr('dominant-baseline', 'middle')
-        .attr('y', -14)
-        .attr('font-size', (d) => (d.nodeType === 'metric' ? '16px' : '19px'))
-        .text((d) => d.icon);
-
-    forceGraphContext.nodeSelection.select('text.force-node-label')
-        .attr('text-anchor', 'middle')
-        .attr('y', 6)
-        .attr('font-size', '10px')
-        .attr('fill', '#ffffff')
-        .attr('font-weight', '600')
-        .text((d) => d.name);
-
-    forceGraphContext.nodeSelection.select('text.force-node-value')
-        .attr('text-anchor', 'middle')
-        .attr('y', 20)
-        .attr('font-size', '9px')
-        .attr('fill', '#cccccc')
-        .text((d) => d.value);
-
-    forceGraphContext.nodeSelection.select('circle.force-node-type-badge-bg')
-        .attr('r', 9)
-        .attr('cx', (d) => getNodeRadius(d) - 9)
-        .attr('cy', (d) => -getNodeRadius(d) + 9)
-        .attr('fill', (d) => (d.nodeType === 'policy' ? '#f59e0b' : '#60a5fa'))
-        .attr('stroke', '#0b0f17')
-        .attr('stroke-width', 1.4);
-
-    forceGraphContext.nodeSelection.select('text.force-node-type-badge-label')
-        .attr('x', (d) => getNodeRadius(d) - 9)
-        .attr('y', (d) => -getNodeRadius(d) + 12)
-        .attr('text-anchor', 'middle')
-        .attr('font-size', '9px')
-        .attr('font-weight', '800')
-        .attr('fill', '#0b0f17')
-        .text((d) => (d.nodeType === 'policy' ? 'P' : 'M'));
+    applyNodeVisualStyles();
 
     applySimulationForces(nodes, links, width, height, maxMagnitude);
     if (isTopologyChanged || previousNodes.size === 0) {
