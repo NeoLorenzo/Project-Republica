@@ -33,5 +33,4 @@ Execution order:
 ## Reproducibility Guarantees
 - Same code + same CSVs + same initial state => same no-policy trajectory.
 - Active relationships come from `engine/relationships.csv` only.
-- `engine/relationships_archive.csv` is non-runtime.
 

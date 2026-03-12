@@ -5,7 +5,7 @@ Use this sequence for safe model changes.
 ## Standard Sequence
 1. Edit `engine/policies.csv`, `engine/metrics.csv`, and/or `engine/relationships.csv` with clear rationale.
 2. Keep `engine/relationships.csv` approved-only.
-3. Move rejected/historical rows to `engine/relationships_archive.csv`.
+3. Keep rejected/historical rows in Git history (commit diffs), not in a runtime CSV.
 4. Run validation runbook checks.
 5. Confirm deterministic identities and no-policy stability.
 6. Update docs and record rationale in `review_notes`.
@@ -24,7 +24,7 @@ When changing GDP mechanics:
 
 ## Rollback Strategy
 - Restore prior snapshots/commit for CSV and rules files.
-- Keep history in `relationships_archive.csv`.
+- Use Git history for rejected/historical edge rows.
 - Re-run validation to confirm baseline behavior.
 
 ## Release Gate

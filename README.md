@@ -25,7 +25,6 @@ http://localhost:8000
 - `engine/policies.csv`: authoritative policy registry (includes fiscal coefficients and `gdp_demand_share` for deterministic GDP government-consumption (`G`) mapping)
 - `engine/metrics.csv`: authoritative metric registry (includes deterministic `gdp`, `government_expenditure`, and `gdp_gov_consumption_G_eur_m` nodes)
 - `engine/relationships.csv`: active equation-only edge registry (approved rows only)
-- `engine/relationships_archive.csv`: non-runtime archive of rejected/historical edge rows
 - `engine/calibration_targets_template.csv`: calibration targets plus metric mapping metadata
 - `engine/EDGE_POLICY.md`: normative edge governance rules
 - `engine/CALIBRATION_GUIDE.md`: calibration strategy and process

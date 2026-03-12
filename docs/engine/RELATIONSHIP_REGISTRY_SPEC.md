@@ -2,7 +2,6 @@
 
 Authoritative files:
 - Active runtime registry: `engine/relationships.csv`
-- Non-runtime history archive: `engine/relationships_archive.csv`
 
 ## Active Schema (Strict)
 Header:
@@ -13,7 +12,7 @@ source,target,sign,equation,edge_mode,inertia,target_class,causal_mechanism,evid
 ## Active Registry Rules
 - All rows must be `status=approved`.
 - Draft/rejected rows must not appear in `engine/relationships.csv`.
-- Rejected/historical rows are stored in `engine/relationships_archive.csv`.
+- Rejected/historical rows are tracked in Git history (commit diffs), not in a separate CSV.
 
 ## Computation Semantics
 - Behavioral edges (`edge_mode=behavioral_contribution`):

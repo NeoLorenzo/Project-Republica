@@ -11,7 +11,7 @@
 ### 1.1 Files and Runtime Paths Audited
 - Engine code: `engine/state.js`, `engine/rules.js`, `engine/gameLoop.js`, `engine/equationEngine.js`
 - Runtime registries: `engine/policies.csv`, `engine/metrics.csv`, `engine/relationships.csv`, `engine/calibration_targets_template.csv`
-- Source and consistency data: `engine/*_source_register.csv`, `engine/*consistency_checks*.csv`
+- Source register data: `data/non_runtime_csv/master_source_register.csv`
 - UI transparency path: `ui/render.js`, `ui/forceGraph.js`
 - Manifest and ops docs: `SIMULATION_SCOPE_AND_REALISM_MANIFESTO.md`, `docs/operations/VALIDATION_RUNBOOK.md`, `docs/engine/RELATIONSHIP_REGISTRY_SPEC.md`
 
@@ -80,7 +80,7 @@ The table below prioritizes gaps by realism impact.
 | D-18 | High | Split-flow coefficients contain non-physical values | 11 negative coefficients; 4 coefficients >1; extremes: +3.782609 and -2.86413 | Can create negative or exaggerated channel flows even if sums equal 1 | Constrain coefficients to [0,1] unless explicitly justified by signed balancing methodology |
 | D-19 | High | Residual government "other" channel violates bounds | `gdp_gov_exp_other_eur_m` runtime 12,235.60 vs bound max 5,000 | Indicates mis-specified split structure or outdated bounds | Re-estimate split matrix and/or update realistic bounds with source justification |
 | D-20 | Medium | `gdp_demand_share` contract is inert | All 84 policies have `gdp_demand_share = 0`; fallback policy-based `G` mapping is effectively disabled | Docs and implementation diverge; hidden dead path | Remove dead contract or populate shares and make path explicit |
-| D-21 | Medium | Data artifact files are not runtime authoritative | `policy_edge_weights.csv` and `gdp_gov_exp_transmission_matrix.csv` are present but not loaded directly by runtime code | Risk of stale governance and silent divergence | Add explicit generation/validation pipeline tying these files to runtime `relationships.csv` |
+| D-21 | Medium | Data artifact files are not runtime authoritative | `data/non_runtime_csv/policy_edge_weights.csv` and `data/non_runtime_csv/gdp_gov_exp_transmission_matrix.csv` are present but not loaded directly by runtime code | Risk of stale governance and silent divergence | Add explicit generation/validation pipeline tying these files to runtime `relationships.csv` |
 | D-22 | Medium | Temporal dynamics are under-parameterized | Inertia distribution: 689 edges with inertia=2, 1 edge inertia=3; target_class mostly `fast` | Timing realism is too uniform across fundamentally different processes | Add process-specific time constants and cadence classes (labor/price/fiscal/demographic) |
 | D-23 | Medium | External sector is static in operation | NX and trade components remain fixed under no-policy; no active exogenous ROW shock pipeline | Misses realistic external-demand/import-price disturbances | Add explicit exogenous shock/event mechanism for trade and imported inflation |
 | D-24 | High | Manifesto transparency contract not met in UI | Force graph + tooltips + budget pies exist, but no aggregate->cohort->lever accounting trace journey | Players cannot inspect causality end-to-end as constitution requires | Implement accounting-trace drilldown (Sankey/path explorer with click-through causality) |

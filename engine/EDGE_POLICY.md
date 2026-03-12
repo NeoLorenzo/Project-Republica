@@ -51,4 +51,4 @@ Startup must fail if any required edge is missing, wrong-sign, or wrong mode.
 ## 5. Active Registry Policy
 - Active runtime file is `engine/relationships.csv`.
 - Active rows must all be `status=approved`.
-- Rejected/historical rows belong in `engine/relationships_archive.csv`.
+- Rejected/historical rows are tracked in Git history (commit diffs).

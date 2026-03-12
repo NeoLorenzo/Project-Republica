@@ -1,2 +1,0 @@
-source_id,institution,dataset_table,direct_url,bookmark_url,publication_date,reference_period,notes
-SRC_EUROSTAT_BOPITS6,Eurostat,International trade in services (BPM6) (bop_its6_det),https://ec.europa.eu/eurostat/databrowser/view/BOP_ITS6_DET/,https://ec.europa.eu/eurostat/databrowser/bookmark/fe41ddd5-de13-4a24-b685-977c0fa44dc8?lang=en&createdAt=2026-03-10T12:12:50Z,2024-01-01,2023 Annual,User-provided Eurostat extract containing exact 2023 Euro values.

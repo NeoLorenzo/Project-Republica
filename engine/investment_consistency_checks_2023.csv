@@ -1,3 +1,0 @@
-check_name,lhs,rhs,absolute_diff,percent_diff,pass_fail,notes
-Check A: sum(7 asset bases) = published N11G total,55384.300,55384.300,0.000,0.00%,PASS,All mapped asset nodes reconcile exactly to the Eurostat total.
-Check B: other variable leakage detection,0.000,0.000,0.000,0.00%,PASS,Residual node is zero so no unmapped leakage remains.
