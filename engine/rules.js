@@ -1020,11 +1020,11 @@ function getRequiredBudgetAccountingEdgeKeys() {
     const keys = new Set();
     getPolicyFiscalRows().forEach((row) => {
         const hasRevenue = row.baseRevenue !== 0 || row.revenueSlope !== 0;
-        if (row.revenueChannel === 'tax') keys.add(`${row.policyId}->tax_revenue`);
-        if (row.revenueChannel === 'non_tax' && hasRevenue) keys.add(`${row.policyId}->budget.income`);
+        if ((row.revenueChannel === 'tax' || row.revenueChannel === 'non_tax') && hasRevenue) {
+            keys.add(`${row.policyId}->govt_revenue_total_eur_m`);
+        }
     });
-    keys.add('tax_revenue->budget.income');
-    keys.add('budget.income->budget.deficit');
+    keys.add('govt_revenue_total_eur_m->budget.deficit');
     keys.add('government_expenditure->budget.deficit');
     keys.add('budget.deficit->budget.debt');
     keys.add('budget.debt->debt_to_gdp');
@@ -1206,25 +1206,17 @@ function validateRequiredBudgetEdges(edges) {
 
     getPolicyFiscalRows().forEach((row) => {
         const hasRevenue = row.baseRevenue !== 0 || row.revenueSlope !== 0;
-        if (row.revenueChannel === 'tax') {
+        if ((row.revenueChannel === 'tax' || row.revenueChannel === 'non_tax') && hasRevenue) {
             requiredEdges.push({
                 source: row.policyId,
-                target: 'tax_revenue',
-                expectedSign: 'positive'
-            });
-        }
-        if (row.revenueChannel === 'non_tax' && hasRevenue) {
-            requiredEdges.push({
-                source: row.policyId,
-                target: 'budget.income',
+                target: 'govt_revenue_total_eur_m',
                 expectedSign: 'positive'
             });
         }
     });
 
     requiredEdges.push(
-        { source: 'tax_revenue', target: 'budget.income', expectedSign: 'positive' },
-        { source: 'budget.income', target: 'budget.deficit', expectedSign: 'negative' },
+        { source: 'govt_revenue_total_eur_m', target: 'budget.deficit', expectedSign: 'negative' },
         { source: 'government_expenditure', target: 'budget.deficit', expectedSign: 'positive' },
         { source: 'budget.deficit', target: 'budget.debt', expectedSign: 'positive' },
         { source: 'budget.debt', target: 'debt_to_gdp', expectedSign: 'positive' },
@@ -2045,7 +2037,9 @@ function calculateBudget(state) {
     const annualNonTaxIncome = entries
         .filter((item) => item.revenueChannel === 'non_tax')
         .reduce((sum, item) => sum + item.revenueValue, 0);
-    const annualIncome = annualTaxIncome + annualNonTaxIncome;
+    const fallbackIncome = annualTaxIncome + annualNonTaxIncome;
+    const revenueTotalNode = Number(getStateValueByNodeId(state, 'govt_revenue_total_eur_m'));
+    const annualIncome = Number.isFinite(revenueTotalNode) ? revenueTotalNode : fallbackIncome;
     const splitFlowExpenditure = computeGovSplitFlowTotalsFromEdges(state)?.government_expenditure;
     const governmentExpenditureNode = Number(getStateValueByNodeId(state, 'government_expenditure'));
     const annualExpenditure = Number.isFinite(splitFlowExpenditure)
@@ -2375,7 +2369,7 @@ function calculateBudgetBreakdown(state) {
         .map((item) => ({ policyId: item.policyId, value: item.costValue }));
     const fallbackIncome = revenueEntries.reduce((sum, item) => sum + item.value, 0);
     const fallbackExpenditure = costEntries.reduce((sum, item) => sum + item.value, 0);
-    const incomeTotalNode = getStateValueByNodeId(state, 'budget.income');
+    const incomeTotalNode = getStateValueByNodeId(state, 'govt_revenue_total_eur_m');
     const expenditureTotalNode = getStateValueByNodeId(state, 'government_expenditure');
     const incomeTotal = Number.isFinite(incomeTotalNode) ? incomeTotalNode : fallbackIncome;
     const expenditureTotal = Number.isFinite(expenditureTotalNode) ? expenditureTotalNode : fallbackExpenditure;
