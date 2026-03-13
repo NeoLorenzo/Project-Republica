@@ -1,135 +1,125 @@
 # SIMULATION REALISM STATE REPORT
 
-**Date:** 2026-03-12  
+**Date:** 2026-03-13  
 **Project:** Project Republica  
-**Audited Area:** Phase-1 economic simulation realism
+**Audited Area:** Phase-1 economic simulation realism re-audit  
 **Applied Standard Source:** `SIMULATION_SCOPE_AND_REALISM_MANIFESTO.md`
-**Prompt Clarification Applied:** User-confirmed realism standard is `SIMULATION_SCOPE_AND_REALISM_MANIFESTO.md`
 
 ## 1. Scope and Method
 
 ### 1.1 Files and Runtime Paths Audited
 - Engine code: `engine/state.js`, `engine/rules.js`, `engine/gameLoop.js`, `engine/equationEngine.js`
 - Runtime registries: `engine/policies.csv`, `engine/metrics.csv`, `engine/relationships.csv`, `engine/calibration_targets_template.csv`
-- Source register data: `data/non_runtime_csv/master_source_register.csv`
-- UI transparency path: `ui/render.js`, `ui/forceGraph.js`
-- Manifest and ops docs: `SIMULATION_SCOPE_AND_REALISM_MANIFESTO.md`, `docs/operations/VALIDATION_RUNBOOK.md`, `docs/engine/RELATIONSHIP_REGISTRY_SPEC.md`
+- UI/transparency path: `ui/render.js`, `ui/forceGraph.js`, `ui/inputs.js`
+- Ops/docs contracts: `README.md`, `engine/EDGE_POLICY.md`, `docs/engine/RELATIONSHIP_REGISTRY_SPEC.md`, `docs/operations/VALIDATION_RUNBOOK.md`
 
-### 1.2 Test Protocol Executed
-- Static graph and registry topology audit.
-- Deterministic 60-turn no-policy run.
+### 1.2 Re-Audit Protocol Executed
+- Static registry topology and schema contract audit.
+- Deterministic 60-turn no-policy run using runtime loaders and turn loop.
 - Identity residual checks each turn.
-- One-turn perturbation test across all 84 policy levers.
-- Calibration fit check against `locked_value/tolerance/bounds`.
-- Split-flow coefficient consistency audit.
-- UI traceability contract audit against manifesto requirement.
+- One-turn perturbation sweep across all active policy levers.
+- Calibration fit check against `locked_value/tolerance/bounds` at initialization.
+- Split-flow coefficient physical plausibility audit.
+- Documentation/runtime contract consistency check.
 
 ## 2. Executive Verdict
 
-**Current realism state:** strong deterministic accounting core, severely underdeveloped behavioral economics layer, and major initialization/calibration incoherence.
+**Current realism state:** deterministic accounting integrity remains strong, but behavioral and policy-transmission realism is now weaker than the prior report baseline, and multiple governance/docs contracts are out of sync with runtime behavior.
 
-**Overall realism maturity (Phase-1 economic target):** **5/10**
+**Overall realism maturity (Phase-1 economic target):** **4/10**
 
 ### 2.1 Dimension Scores
 - Hard Math deterministic accounting realism: **9/10**
-- Behavioral macro transmission realism: **2/10**
-- Policy agency realism (beyond fiscal arithmetic): **3/10**
+- Behavioral macro transmission realism: **1/10**
+- Policy agency realism (beyond fiscal arithmetic): **1/10**
 - Calibration realism (start-state + no-policy plausibility): **4/10**
 - Transparency realism (traceability UX contract): **3/10**
 
 ### 2.2 Core Finding
-The model already behaves like a coherent accounting machine, but not yet like a realistic macroeconomy. The main realism blocker is missing behavioral propagation, not arithmetic correctness.
+The simulation still behaves as a reliable accounting machine, but current active runtime topology has regressed to an even thinner behavioral layer than previously reported, with almost no macro-policy behavioral transmission.
 
-## 3. What Is Already Realistic (Successful Parallels)
+## 3. What Is Already Realistic (Still Working)
 
-1. Deterministic GDP identity is exactly enforced: `gdp = C + I + G + NX` with zero residual in tested 60-turn runs.
-2. Debt ratio identity is exactly enforced: `debt_to_gdp = (budget.debt / gdp) * 100` with zero residual in tested runs.
-3. Budget debt stock updates consistently from monthlyized deficit (`annualDeficit/12`) in `calculateBudget`.
-4. Government spending is modeled with high COFOG granularity (66 spending levers within 84 total policies).
-5. Government split-flow decomposition exists (`P3`, `P51G`, `D62`, `D4`, residual) and drives deterministic channels.
-6. Split-flow coefficients are internally conservative by source (sum near 1.0 for all 66 audited source nodes).
-7. Active relationship registry is strict and fail-fast (`approved` only, no unknown nodes, no self-links, no duplicate pairs).
-8. Required accounting edge set is enforced at load time.
-9. Policy-node exogeneity is enforced (no inbound edges to policy nodes).
-10. Data provenance scaffolding exists and cites official sources (Eurostat/INE style source registers).
-11. Consumption, investment, and government datasets include consistency-check artifacts.
-12. Runtime determinism is reproducible with fixed files and state.
-13. Accounting aggregate ownership is now explicit: formula-owned nodes (including `gdp`, `debt_to_gdp`, and budget stock/flow nodes) are derived-only at runtime, with seed/calibration locks ignored.
+1. Deterministic GDP identity is exactly enforced at runtime: `gdp = C + I + G + NX`.
+2. Debt-ratio identity is exactly enforced at runtime: `debt_to_gdp = (budget.debt / gdp) * 100`.
+3. Budget stock-flow arithmetic remains deterministic and coherent in `calculateBudget`.
+4. Initialization still recomputes derived economy metrics and budget at `m0` with `applyMonthlyDebtFlow: false`.
+5. Active relationship registry guardrails remain strict: approved-only rows, no unknown nodes, no self-links, no duplicate source-target pairs, no policy inbound edges.
+6. Required accounting edge enforcement remains fail-fast at load time.
+7. Deterministic ownership guard for accounting-derived nodes remains enforced during seeding/calibration.
+8. Runtime determinism is reproducible given fixed files and startup state.
 
-## 4. Realism Deviations Register (Comprehensive)
-
-The table below prioritizes gaps by realism impact.
+## 4. Re-Audit Deviations Register (Current Runtime)
 
 | ID | Severity | Deviation | Evidence | Realism Impact | Required Correction |
 |---|---|---|---|---|---|
-| D-02 | Critical | Behavioral network is near-empty | 6 behavioral edges out of 690 total; 684 accounting-trace edges | Economy behaves mostly as static accounting, not adaptive macro system | Expand behavioral layer to cover demand, labor, prices, income, investment, external channels |
-| D-03 | Critical | Most simulation-enabled metrics are behaviorally disconnected | 45 simulation-enabled metrics; 42 have zero behavioral inbound edges | Sim-enabled domain mostly frozen and non-economic | Add inbound dynamics or reclassify as deterministic/non-simulated |
-| D-04 | Critical | Most player levers lack behavioral pathways | 84 policies total; only 3 have any behavioral edges (`incomeTax`, `vat`, `carbonTax`) | Agency is mostly fiscal bookkeeping, not macro steering | Add causal channels from fiscal/tax/regulatory levers to endogenous macro metrics |
-| D-05 | Critical | Labor market realism missing | `unemployment_rate` has exactly 1 behavioral inbound edge (`central_bank_policy_rate`); 0/84 policy perturbations change unemployment | No demand-to-employment transmission | Add Okun-style and labor-demand channels (GDP gap, wages, hiring costs, sector demand) |
-| D-06 | High | Inflation model too narrow | Inflation only responds behaviorally to VAT and carbon tax; no wage/import/output-gap channels | Price dynamics are structurally incomplete | Add wage-price, import-price, demand pressure, expectations/exogenous energy channels |
-| D-07 | High | Real disposable income is a sink node | `real_household_disposable_income` has inbound edges only; no outbound effects to `consumption` etc. | Income changes do not propagate to aggregate demand | Add outbound edges from real disposable income to consumption/savings/poverty/happiness |
-| D-08 | Critical | `nominal_minimum_wage` lever is inert | Exists in `policies.csv` and `state.js`, absent from `relationships.csv` and engine logic | Regulatory lever has zero simulation effect | Add minimum wage transmission to labor costs, employment, wages, inflation, disposable income |
-| D-09 | High | `tax_revenue` metric is static | `economy.tax_revenue` is initialized in `state.js` and referenced in required edges but never recomputed in deterministic formulas; policy sensitivity = 0 | Reported tax metric can diverge from actual fiscal mechanics | Deterministically compute tax-revenue ratio or re-scope metric/unit to actual series |
-| D-10 | High | No-policy real activity is static | 60-turn no-policy GDP span in last 12 months = 0; C/I/NX effectively flat | No endogenous business-cycle behavior | Introduce behavioral links from prices/income/labor/expectations into C and I (and optionally NX via exogenous shocks) |
-| D-11 | High | No-policy unemployment and inflation drift from level effects | m0->m60: unemployment 6.50->6.97, inflation 2.70->3.26 with no policy change | Baseline not in equilibrium despite no shocks | Use delta-from-baseline equations (`x - x*`) or add intercept calibration so baseline is stationary |
-| D-12 | Resolved | Turn-1 fiscal discontinuity | Resolved on 2026-03-13: initialization now recomputes budget arithmetic at `m0` using runtime budget logic while preserving opening debt stock | Closed: removes artificial `m0 -> m1` fiscal jump | Implemented in `engine/state.js` + `engine/rules.js` (`calculateBudget(..., { applyMonthlyDebtFlow: false })`) |
-| D-13 | Resolved | Initialization GDP discontinuity and mismatch | Resolved on 2026-03-13: deterministic aggregate ownership is enforced (`gdp` and related accounting aggregates are formula-derived, not seed/calibration-owned), and startup anchors now align to deterministic init baseline (`311,423.22`) | Closed: removes conflicting GDP start anchors and startup mismatch messaging | Implemented by enforcing derived-only ownership in runtime seed/calibration paths and reconciling GDP baseline references |
-| D-14 | Critical | Calibration mismatch is severe when properly evaluated | 458 rows checked; 13 out-of-tolerance; 1 out-of-bounds (`gdp_gov_exp_other_eur_m`) | Model is not truly calibrated at start-state for key macro nodes | Recalibrate locked values and deterministic derivations jointly |
-| D-15 | High | Calibration parser drops `tolerance` and `weight` fields | `parseCalibrationTargetsCsv` validates these fields but does not return them in parsed row object | Runtime calibration diagnostics can silently under-report fit quality | Return and use `tolerance` and `weight` in calibration scoring and reports |
-| D-16 | High | Government consumption target inconsistency | `gdp_gov_consumption_G_eur_m` locked target 27,412 vs runtime 46,027.35 and transmission matrix total P3 44,853.2 | Competing definitions of "G" degrade calibration realism | Choose one authoritative definition (National Accounts P3) and align all targets/derivations |
-| D-17 | High | Transfer-consumption baseline mismatch | Accounting trace uses `x_raw - 27441.895` while deterministic consumption baseline uses metric initial (currently 0 after calibration lock) | Double-counting control is inconsistent across systems | Unify baseline anchor in one source of truth and remove hard-coded constant divergence |
-| D-18 | High | Split-flow coefficients contain non-physical values | 11 negative coefficients; 4 coefficients >1; extremes: +3.782609 and -2.86413 | Can create negative or exaggerated channel flows even if sums equal 1 | Constrain coefficients to [0,1] unless explicitly justified by signed balancing methodology |
-| D-19 | High | Residual government "other" channel violates bounds | `gdp_gov_exp_other_eur_m` runtime 12,235.60 vs bound max 5,000 | Indicates mis-specified split structure or outdated bounds | Re-estimate split matrix and/or update realistic bounds with source justification |
-| D-20 | Resolved | `gdp_demand_share` contract is inert | Resolved on 2026-03-13: runtime no longer uses policy-share fallback for `G`; contract de-scoped to accounting-owned `G` path (split-flow/P3) and docs aligned | Closed: removes dead fallback contract and doc/runtime mismatch | Implemented by removing policy-based `G` fallback from `engine/rules.js` and updating node/runbook docs |
-| D-21 | Medium | Data artifact files are not runtime authoritative | `data/non_runtime_csv/policy_edge_weights.csv` and `data/non_runtime_csv/gdp_gov_exp_transmission_matrix.csv` are present but not loaded directly by runtime code | Risk of stale governance and silent divergence | Add explicit generation/validation pipeline tying these files to runtime `relationships.csv` |
-| D-22 | Medium | Temporal dynamics are under-parameterized | Inertia distribution: 689 edges with inertia=2, 1 edge inertia=3; target_class mostly `fast` | Timing realism is too uniform across fundamentally different processes | Add process-specific time constants and cadence classes (labor/price/fiscal/demographic) |
-| D-23 | Medium | External sector is static in operation | NX and trade components remain fixed under no-policy; no active exogenous ROW shock pipeline | Misses realistic external-demand/import-price disturbances | Add explicit exogenous shock/event mechanism for trade and imported inflation |
-| D-24 | High | Manifesto transparency contract not met in UI | Force graph + tooltips + budget pies exist, but no aggregate->cohort->lever accounting trace journey | Players cannot inspect causality end-to-end as constitution requires | Implement accounting-trace drilldown (Sankey/path explorer with click-through causality) |
-| D-25 | Medium | Accounting trace coefficients can mislead interpretation | Budget trace edges use `0.95*x` patterns while deterministic formulas are identity exact | Visual trace may imply non-identity elasticities | Align accounting-trace coefficients to identity-compatible visual semantics |
-| D-26 | Resolved | Simulation ownership conflict risk in C/I/NX | Resolved on 2026-03-13: `consumption` and `investment` were set to deterministic-only (`simulation_enabled=no`), and `netExports` was already deterministic-only; derived aggregate ownership is now consistent across seed, calibration, and runtime recompute | Closed: eliminates silent overwrite risk from mixed simulation/deterministic ownership at aggregate GDP-component level | Implemented via `metrics.csv` ownership flags plus derived-node seed/calibration guards in runtime |
-| D-27 | Low | Anchor representation inconsistency in `state.js` | `simulationConfig.baseValues` comment says normalized, but includes raw-like values for some metrics before seeding | Maintenance and onboarding confusion | Keep only normalized anchors or derive all anchors from registry at init |
+| D-01 | Resolved | Prior realism report was materially stale vs runtime (resolved 2026-03-13) | Report has been re-baselined to active registries/runtime outputs and rewritten with current evidence snapshots | Closed: realism governance baseline is now current | Keep this report updated after any topology/registry/runtime-contract change |
+| D-02 | Critical | Behavioral network is near-empty | Active edges: 829 total, only 3 behavioral and 826 accounting-trace | Economy behaves almost entirely as static accounting | Expand behavioral layer for demand, labor, prices, investment, external channels |
+| D-03 | Critical | Policy behavioral agency is effectively zero | 68 active policies; 0 with any behavioral edge | Player policy mainly alters accounting totals, not endogenous macro dynamics | Add policy -> behavioral metric pathways with auditable mechanisms |
+| D-04 | Critical | Simulation-enabled metrics are mostly behaviorally disconnected | 42 simulation-enabled metrics; only 2 have behavioral inbound (`unemployment_rate`, `real_household_disposable_income`) | Sim-enabled space is mostly inert/frozen around baseline anchors | Add behavioral inbound coverage or reclassify metrics as deterministic |
+| D-05 | Critical | Labor market realism missing from player agency | `unemployment_rate` has 1 behavioral inbound (`central_bank_policy_rate`) and 0/68 policy perturbations affect unemployment | No labor-demand transmission from fiscal/regulatory controls | Add Okun-style and labor-demand channels linked to policy families |
+| D-06 | High | Inflation channel too narrow and policy-inert | Inflation has no policy sensitivity in one-turn perturbation (0/68) | Price-level dynamics do not respond to player action | Add wage, import-price, demand-pressure, expectations channels and policy links |
+| D-07 | High | `real_household_disposable_income` is a sink node | Inbound behavioral edges exist, outbound behavioral edges = 0 | Income changes do not propagate to demand/welfare outcomes | Add outbound links to consumption, savings, poverty, wellbeing |
+| D-08 | Critical | `nominal_minimum_wage` lever remains fully inert | Present in `policies.csv`; no edges in active relationships; perturbation has zero tracked effects | Regulatory lever has zero simulation function | Add minimum-wage transmission chain (wages, prices, employment, income) |
+| D-09 | High | Revenue side is static in operation | `govt_revenue_total_eur_m` is read by budget math but not recomputed by deterministic formulas each turn; perturbation sensitivity = 0 | Reported fiscal income can decouple from policy intent | Add deterministic revenue recompute pipeline or explicit exogenous contract |
+| D-10 | High | No-policy real activity remains static with drift artifact | 60-turn no-policy run: GDP flat at 283,981.33; unemployment drifts 6.50 -> 6.97; inflation flat 2.70; debt ratio rises 92.96 -> 115.34 | Baseline lacks realistic endogenous cycle behavior and stationarity | Introduce centered/delta equations and richer endogenous propagation |
+| D-11 | High | Calibration parser drops `weight` and `tolerance` fields post-parse | Fields validated but omitted from returned calibration row objects | Runtime calibration diagnostics cannot use declared tolerances/weights | Return/store `weight` and `tolerance`; use in scoring and reporting |
+| D-12 | High | Split-flow coefficients include non-physical values | 15 split coefficients outside [0,1]; extremes `+3.782609` and `-2.86413` | Can imply non-physical allocation behavior despite conservative sums | Constrain/justify coefficient domain and document signed-balancing method |
+| D-13 | High | Residual government "other" channel violates bounds | `gdp_gov_exp_other_eur_m` runtime 12,235.60 vs bound max 5,000 | Indicates split/bounds mismatch and calibration incoherence | Re-estimate split matrix and/or update bounds with source justification |
+| D-14 | High | Docs/runtime contract drift on budget edge model | Docs still reference `tax_revenue -> budget.income` and policy->budget chains, runtime enforces `govt_revenue_total_eur_m -> budget.deficit` and `government_expenditure -> budget.deficit` | Maintenance and validation governance become misleading | Update EDGE/registry/runbook docs to match active runtime contract |
+| D-15 | Medium | Budget chart decomposition is non-informative with current policy registry | All policies currently have zero fiscal coefficients and `revenue_channel=none`; pie chart slices empty while totals are nonzero | UI suggests traceability but cannot explain budget composition | Restore fiscal coefficient data or redesign chart contract around active aggregates |
+| D-16 | Medium | Temporal dynamics are under-parameterized | Inertia distribution: 828 edges inertia=2, 1 edge inertia=3; target_class mostly `fast` | Process timing realism too uniform | Introduce process-specific cadence/inertia families |
+| D-17 | Medium | External sector is deterministic-static in operation | Trade aggregates remain fixed under no-policy run; no active exogenous ROW shock pipeline | Misses external-demand and imported-price disturbances | Add explicit exogenous shock/event mechanism |
+| D-18 | High | Manifesto transparency contract still not met in UI | Force graph/tooltips/pies exist, but no aggregate->cohort->lever causal drilldown journey | Users cannot inspect end-to-end causality as required | Implement accounting-trace drilldown/path explorer |
 
-## 5. Runtime Evidence Snapshot
+## 5. Runtime Evidence Snapshot (Current Re-Audit)
 
-### 5.1 Topology
-- Total edges: **690**
-- Behavioral edges: **6**
-- Accounting-trace edges: **684**
-- Simulation-enabled metrics: **45**
-- Simulation-enabled metrics with behavioral inbound: **3**
-- Simulation-enabled metrics without behavioral inbound: **42**
-- Policies with any behavioral edge: **3 / 84**
+### 5.1 Registry/Topology Snapshot
+- Node registry total: **647**
+- Policies: **68**
+- Metrics: **579**
+- Simulation-enabled metrics: **42**
+- Relationship edges total: **829**
+- Behavioral edges: **3**
+- Accounting-trace edges: **826**
+- Policies with any behavioral edge: **0 / 68**
+- Simulation-enabled metrics with behavioral inbound: **2 / 42**
 
-### 5.2 No-Policy Trajectory (Selected)
-- `m0`: GDP 311,423.22 | unemployment 6.50 | inflation 2.70 | debt/GDP 84.77
-- `m1`: GDP 311,423.22 | unemployment 6.66 | inflation 2.98 | debt/GDP 84.83
-- `m12`: GDP 311,423.22 | unemployment 6.97 | inflation 3.26 | debt/GDP 85.42
-- `m60`: GDP 311,423.22 | unemployment 6.97 | inflation 3.26 | debt/GDP 88.03
+### 5.2 Active Behavioral Edge Set
+- `central_bank_policy_rate -> unemployment_rate`
+- `rentBurden -> real_household_disposable_income`
+- `inflation_consumer_prices -> real_household_disposable_income`
 
-### 5.3 Identity Integrity
-- Max GDP identity residual over tested 60 turns: **0**
-- Max debt-ratio residual over tested 60 turns: **0**
+### 5.3 No-Policy Trajectory (60-turn)
+- `m0`: GDP **283,981.33** | unemployment **6.50** | inflation **2.70** | debt/GDP **92.96**
+- `m1`: GDP **283,981.33** | unemployment **6.66** | inflation **2.70** | debt/GDP **93.34**
+- `m12`: GDP **283,981.33** | unemployment **6.97** | inflation **2.70** | debt/GDP **97.44**
+- `m60`: GDP **283,981.33** | unemployment **6.97** | inflation **2.70** | debt/GDP **115.34**
 
-### 5.4 Policy Sensitivity Coverage (1-turn perturbation, 84 levers)
+### 5.4 Identity Integrity (60-turn run)
+- Max GDP identity residual: **0**
+- Max debt-ratio residual: **0**
+
+### 5.5 Policy Sensitivity Coverage (1-turn perturbation, 68 levers)
 - GDP affected by **65** levers
 - Unemployment affected by **0** levers
-- Inflation affected by **2** levers
-- Real disposable income affected by **1** lever
-- Budget income affected by **16** levers
+- Inflation affected by **0** levers
+- Real disposable income affected by **0** levers
+- Govt revenue total affected by **0** levers
+- Budget income affected by **0** levers
 - Budget expenditure affected by **66** levers
-- Deficit affected by **82** levers
-- Debt affected by **82** levers
-- Debt-to-GDP affected by **83** levers
-- `tax_revenue` affected by **0** levers
+- Deficit affected by **66** levers
+- Debt affected by **66** levers
+- Debt-to-GDP affected by **67** levers
 - Fully inert policy across tracked outputs: **`nominal_minimum_wage`**
 
-### 5.5 Calibration Fit (True tolerance check against raw calibration CSV)
-- Rows checked: **458**
-- Out-of-tolerance: **13**
+### 5.6 Calibration Fit at Initialization
+- Rows checked (`exists_in_current_sim=yes` with numeric state path): **617**
+- Out-of-tolerance: **12**
 - Out-of-bounds: **1**
 - Largest tolerance breach ratio: **6117.75x** (`gdp_gov_exp_other_eur_m`)
 
-Key out-of-tolerance nodes:
+Out-of-tolerance nodes:
 - `gdp_gov_exp_other_eur_m`
 - `household_transfer_income_d62_eur_m`
 - `household_consumption_from_transfers_eur_m`
@@ -139,49 +129,56 @@ Key out-of-tolerance nodes:
 - `public_investment_p51g_eur_m`
 - `private_investment_eur_m`
 - `gdp`
-- `consumption`
-- `debt_to_gdp`
 - `households_total`
+- `debt_to_gdp`
 - `government_expenditure`
 
-## 6. Priority Remediation Plan (To Reach Manifesto Realism Standard)
+### 5.7 Split-Flow Plausibility Snapshot
+- Split source nodes audited: **66**
+- Channel edges from split sources to (`G`, `P51G`, `D62`, `D4`, `other`): **210**
+- Coefficients outside [0,1]: **15**
+- Most extreme coefficients: **+3.782609**, **-2.86413**
 
-### P0: Baseline Coherence and Calibration Integrity
-1. Fix calibration parser to retain and expose `weight` and `tolerance`.
-2. (Done 2026-03-13) Budget is recomputed at initialization so turn 0 equals runtime arithmetic, without extra debt accumulation.
-3. (Partially done 2026-03-13) Deterministic ownership enforced for aggregate accounting nodes (including budget stock/flow nodes) and GDP baseline reconciled; remaining baseline reconciliation pending for `consumption`, `G`, `D62`, and transfer consumption.
-4. Remove hard-coded baseline mismatch (`x_raw - 27441.895`) unless mirrored in deterministic baseline source.
-5. Re-estimate or constrain split-flow coefficients and eliminate non-physical negative/>1 shares unless fully justified.
+## 6. Priority Remediation Plan
+
+### P0: Baseline and Governance Coherence
+1. Replace stale report claims with runtime-derived evidence (this re-audit baseline).
+2. Reconcile docs/contracts (`README`, `EDGE_POLICY`, `RELATIONSHIP_REGISTRY_SPEC`, `VALIDATION_RUNBOOK`) with active runtime budget-edge model.
+3. Fix calibration parser to retain and expose `weight` and `tolerance`.
+4. Reconcile initialization anchors and calibration targets for `gdp`, `G`, `D62`, transfer-consumption, and residual-other channels.
 
 ### P1: Behavioral Macro Completion
-1. Add labor demand and employment channels (GDP gap, labor cost, productivity proxies).
-2. Add outbound links from `real_household_disposable_income` to consumption/savings/poverty metrics.
-3. Extend inflation drivers beyond tax pass-through (wages, import prices, demand pressure, expectations proxies).
-4. Move from level-only equations to centered/delta equations to avoid no-policy drift artifacts.
-5. Activate currently inert regulatory levers (`nominal_minimum_wage` first).
+1. Expand behavioral edge set from 3 edges to full macro transmission coverage.
+2. Add outbound effects from real disposable income to demand and welfare channels.
+3. Activate labor, wage, inflation, and employment policy transmission families.
+4. Remove inert active levers (starting with `nominal_minimum_wage`).
 
-### P2: Policy Agency and Transparency Contract
-1. Ensure every player lever has at least one auditable causal path into hard math and/or soft abstractions.
-2. Implement manifesto-required accounting trace UX: aggregate -> cohort/channel -> draining lever.
-3. Harmonize accounting-trace visual coefficients with deterministic identity semantics.
+### P2: Fiscal/Revenue Dynamics Completion
+1. Implement deterministic recomputation or explicit modeled dynamics for `govt_revenue_total_eur_m`.
+2. Restore meaningful fiscal coefficients in policy registry, or de-scope/replace budget-slice UI that depends on those coefficients.
+3. Ensure one-turn policy sensitivity includes nontrivial macro and fiscal channels beyond expenditure-only movements.
 
-### P3: Governance and Data Pipeline Hardening
-1. Establish authoritative generation pipeline from source matrices to runtime `relationships.csv`.
-2. Add automated checks that prevent stale matrix/edge divergence.
-3. (Done 2026-03-13) Reconciled docs/contracts by de-scoping inactive `gdp_demand_share` runtime path and documenting accounting-owned `G`.
+### P3: Split-Flow and Calibration Hardening
+1. Re-estimate/constrain split-flow coefficients to physically interpretable ranges (or explicitly justify signed decomposition methodology).
+2. Eliminate `gdp_gov_exp_other_eur_m` bounds violations through matrix/bounds reconciliation.
+3. Add automated checks for coefficient plausibility and calibration-bound violations in CI.
+
+### P4: Transparency Contract Delivery
+1. Implement aggregate -> channel/cohort -> lever causal drilldown UX.
+2. Keep force-graph and pie views as overview layers, not primary traceability surface.
 
 ## 7. Acceptance Gates for "Realism-Ready" Status
 
 The model should not be considered realism-complete until all gates pass:
 
-1. **Stationary baseline gate:** no-policy run has realistic drift profile with explicit justification.
-2. **Transmission gate:** each major macro target (`GDP`, unemployment, inflation, disposable income) responds to multiple relevant policy families.
-3. **Calibration gate:** no high-priority target out of tolerance at initialization.
-4. **Physical plausibility gate:** no non-justified negative or >1 split coefficients in monetary allocation channels.
-5. **Agency gate:** no inert player levers in active policy set.
-6. **Transparency gate:** user can trace outcomes end-to-end in UI, not only view static graph links.
+1. **Stationary baseline gate:** no-policy trajectory shows justified drift profile; key macro nodes are not unintentionally frozen.
+2. **Transmission gate:** each major macro target (GDP, unemployment, inflation, disposable income) responds to multiple relevant policy families.
+3. **Calibration gate:** no high-priority initialization targets out of tolerance/out of bounds.
+4. **Plausibility gate:** split-flow coefficients are physically justified and bounded by policy.
+5. **Agency gate:** no inert policy levers in active policy set.
+6. **Governance gate:** docs, validation runbook, and runtime contracts are synchronized.
+7. **Transparency gate:** end-to-end causal trace journey is available in UI.
 
 ## 8. Final Assessment
 
-Project Republica already has a credible deterministic accounting skeleton and strong governance scaffolding.  
-To meet the manifesto standard of "realistic depth and true systemic player agency," the next required work is not more accounting identity code; it is behavioral transmission completeness, initialization coherence, calibration rigor, and full causal trace UX.
+Project Republica remains strongest in deterministic accounting integrity. The current blocker to manifesto-level realism is not identity math; it is the absence of behavioral transmission breadth, missing policy-to-behavior pathways, calibration/initialization incoherence in key government channels, and unresolved governance/traceability contract drift.
