@@ -88,6 +88,30 @@ const GOV_SPLIT_FLOW_TARGET_IDS = Object.freeze([
     'gdp_gov_exp_other_eur_m'
 ]);
 const GOV_SPLIT_FLOW_LEAF_SOURCE_PATTERN = /^gdp_gov_exp_[a-z_]+_GF\d{4}_[A-Za-z0-9_]+_eur_m$/;
+// Deterministic accounting aggregates are formula-owned at runtime and must not be calibration-locked.
+const ACCOUNTING_DERIVED_NODE_IDS = new Set([
+    'gdp',
+    'consumption',
+    'investment',
+    'netExports',
+    'gdp_investment_gfcf_total_eur_m',
+    'public_investment_p51g_eur_m',
+    'private_investment_eur_m',
+    'government_expenditure',
+    'gdp_gov_consumption_G_eur_m',
+    'gdp_gov_exp_d4_interest_total_eur_m',
+    'household_transfer_income_d62_eur_m',
+    'household_consumption_from_transfers_eur_m',
+    'household_savings_from_transfers_eur_m',
+    'gdp_gov_exp_other_eur_m',
+    'debt_to_gdp',
+    'budget.deficit',
+    'budget.debt'
+]);
+
+function isAccountingDerivedNodeId(nodeId) {
+    return ACCOUNTING_DERIVED_NODE_IDS.has(nodeId);
+}
 
 function getTradeComponentNodeIds(flowPrefix, otherNodeId) {
     const hsNodes = [...knownNodeIds]
@@ -636,9 +660,17 @@ function applyCalibrationLockedValues(parsedRows, calibrationRows) {
         return parsedRows;
     }
 
+    const activeCalibrationRows = calibrationRows.filter((row) => row.existsInCurrentSim);
+    const ignoredDerivedCalibrationRows = activeCalibrationRows.filter((row) => isAccountingDerivedNodeId(row.nodeId));
+    if (ignoredDerivedCalibrationRows.length > 0) {
+        console.warn(
+            `[calibration] Ignoring ${ignoredDerivedCalibrationRows.length} locked values for accounting-derived nodes: `
+            + ignoredDerivedCalibrationRows.map((row) => row.nodeId).join(', ')
+        );
+    }
     const calibrationByNodeId = new Map(
-        calibrationRows
-            .filter((row) => row.existsInCurrentSim)
+        activeCalibrationRows
+            .filter((row) => !isAccountingDerivedNodeId(row.nodeId))
             .map((row) => [row.nodeId, row])
     );
     if (calibrationByNodeId.size === 0) {

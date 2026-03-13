@@ -5,7 +5,7 @@
 const portugalState = {
     // Economic indicators - Portugal Jan 2024 reality
     economy: {
-        gdp: 267000, // million euros (EUR 267 billion - actual 2023 GDP)
+        gdp: 311423.22, // million euros (deterministic Jan 2024 initialization baseline)
         gdpGrowth: 0.023, // 2.3% annual growth (2023 actual)
         unemployment_rate: 6.5, // percentage (actual rate)
         inflation_consumer_prices: 2.3, // percentage (actual rate)
@@ -1254,6 +1254,35 @@ function setValueAtPath(source, path, value) {
     return true;
 }
 
+// Deterministic accounting aggregates are recomputed by engine formulas and not seeded from registry values.
+const ACCOUNTING_DERIVED_NODE_IDS_FOR_SEEDING = new Set([
+    'gdp',
+    'consumption',
+    'investment',
+    'netExports',
+    'gdp_investment_gfcf_total_eur_m',
+    'public_investment_p51g_eur_m',
+    'private_investment_eur_m',
+    'government_expenditure',
+    'gdp_gov_consumption_G_eur_m',
+    'gdp_gov_exp_d4_interest_total_eur_m',
+    'household_transfer_income_d62_eur_m',
+    'household_consumption_from_transfers_eur_m',
+    'household_savings_from_transfers_eur_m',
+    'gdp_gov_exp_other_eur_m',
+    'debt_to_gdp',
+    'budget.deficit',
+    'budget.debt'
+]);
+
+function isAccountingDerivedNodeForSeeding(nodeId) {
+    if (!nodeId) return false;
+    if (typeof isAccountingDerivedNodeId === 'function') {
+        return isAccountingDerivedNodeId(nodeId);
+    }
+    return ACCOUNTING_DERIVED_NODE_IDS_FOR_SEEDING.has(nodeId);
+}
+
 function seedNodeInitialValuesFromRegistry(state) {
     if (!state) {
         throw new Error('Cannot seed node initial values: state is unavailable.');
@@ -1277,16 +1306,20 @@ function seedNodeInitialValuesFromRegistry(state) {
         if (typeof current !== 'number' || !Number.isFinite(current)) {
             throw new Error(`Cannot seed node "${nodeId}": storage_path "${storagePath}" is not numeric in base state.`);
         }
-        const applied = setValueAtPath(state, storagePath, initialValue);
-        if (!applied) {
-            throw new Error(`Cannot seed node "${nodeId}": failed to apply initial value at "${storagePath}".`);
+        const shouldSkipDerivedSeed = isAccountingDerivedNodeForSeeding(nodeId);
+        if (!shouldSkipDerivedSeed) {
+            const applied = setValueAtPath(state, storagePath, initialValue);
+            if (!applied) {
+                throw new Error(`Cannot seed node "${nodeId}": failed to apply initial value at "${storagePath}".`);
+            }
         }
 
         // Keep simulation anchors aligned with seeded registry values.
         if (row.simulationEnabled === true) {
             const hasRange = Number.isFinite(row.min) && Number.isFinite(row.max) && row.max > row.min;
             if (hasRange && state.simulationConfig && state.simulationConfig.baseValues) {
-                const normalized = (initialValue - row.min) / (row.max - row.min);
+                const anchorSourceValue = shouldSkipDerivedSeed ? Number(current) : initialValue;
+                const normalized = (anchorSourceValue - row.min) / (row.max - row.min);
                 state.simulationConfig.baseValues[nodeId] = Math.max(0, Math.min(1, normalized));
             }
         }

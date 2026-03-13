@@ -1,6 +1,6 @@
 ﻿"metric_id","storage_path","initial_value","min","max","k","modifier_range","display_name","short_label","description","icon","color_token","value_unit","graph_enabled","simulation_enabled","ui_order"
 "debt_to_gdp","economy.debt_to_gdp","98.9","60","160","1.4","0.10","Debt To GDP","Debt/GDP","General government debt as a percent of GDP, derived from budget debt and GDP.","??","var(--neutral)","percent_1","yes","no","1"
-"gdp","economy.gdp","267000","180000","420000","1.6","0.28","GDP","GDP","Deterministic GDP identity metric (C + I + G + NX).","??","var(--economy)","eur_b","yes","no","2"
+"gdp","economy.gdp","311423.22","180000","420000","1.6","0.28","GDP","GDP","Deterministic GDP identity metric (C + I + G + NX).","??","var(--economy)","eur_b","yes","no","2"
 "unemployment_rate","economy.unemployment_rate","6.5","0","25","1.7","0.22","Unemployment Rate","Unemployment Rate","Simulation metric for Unemployment Rate.","??","var(--warning)","percent_1","yes","yes","3"
 "inflation_consumer_prices","economy.inflation_consumer_prices","2.3","-1","12","1.7","0.22","Inflation Consumer Prices","Inflation Consumer Prices","Simulation metric for Inflation Consumer Prices.","??","var(--neutral)","percent_1","yes","yes","4"
 "consumption","economy.consumption","181033.700","100000","280000","1.6","0.30","Consumption","Consumption","Deterministic household consumption component of GDP from COICOP decomposition (12 divisions + residual), million EUR.","??","var(--economy)","eur_b","yes","yes","5"

@@ -54,6 +54,7 @@ The model already behaves like a coherent accounting machine, but not yet like a
 10. Data provenance scaffolding exists and cites official sources (Eurostat/INE style source registers).
 11. Consumption, investment, and government datasets include consistency-check artifacts.
 12. Runtime determinism is reproducible with fixed files and state.
+13. Accounting aggregate ownership is now explicit: formula-owned nodes (including `gdp`, `debt_to_gdp`, and budget stock/flow nodes) are derived-only at runtime, with seed/calibration locks ignored.
 
 ## 4. Realism Deviations Register (Comprehensive)
 
@@ -72,7 +73,7 @@ The table below prioritizes gaps by realism impact.
 | D-10 | High | No-policy real activity is static | 60-turn no-policy GDP span in last 12 months = 0; C/I/NX effectively flat | No endogenous business-cycle behavior | Introduce behavioral links from prices/income/labor/expectations into C and I (and optionally NX via exogenous shocks) |
 | D-11 | High | No-policy unemployment and inflation drift from level effects | m0->m60: unemployment 6.50->6.97, inflation 2.70->3.26 with no policy change | Baseline not in equilibrium despite no shocks | Use delta-from-baseline equations (`x - x*`) or add intercept calibration so baseline is stationary |
 | D-12 | Resolved | Turn-1 fiscal discontinuity | Resolved on 2026-03-13: initialization now recomputes budget arithmetic at `m0` using runtime budget logic while preserving opening debt stock | Closed: removes artificial `m0 -> m1` fiscal jump | Implemented in `engine/state.js` + `engine/rules.js` (`calculateBudget(..., { applyMonthlyDebtFlow: false })`) |
-| D-13 | Critical | Initialization GDP discontinuity and mismatch | State comment says ~267,000; runtime init computes 311,423.22 | Baseline realism and user trust are compromised | Reconcile base state, calibration targets, and deterministic derivation ownership |
+| D-13 | Resolved | Initialization GDP discontinuity and mismatch | Resolved on 2026-03-13: deterministic aggregate ownership is enforced (`gdp` and related accounting aggregates are formula-derived, not seed/calibration-owned), and startup anchors now align to deterministic init baseline (`311,423.22`) | Closed: removes conflicting GDP start anchors and startup mismatch messaging | Implemented by enforcing derived-only ownership in runtime seed/calibration paths and reconciling GDP baseline references |
 | D-14 | Critical | Calibration mismatch is severe when properly evaluated | 458 rows checked; 13 out-of-tolerance; 1 out-of-bounds (`gdp_gov_exp_other_eur_m`) | Model is not truly calibrated at start-state for key macro nodes | Recalibrate locked values and deterministic derivations jointly |
 | D-15 | High | Calibration parser drops `tolerance` and `weight` fields | `parseCalibrationTargetsCsv` validates these fields but does not return them in parsed row object | Runtime calibration diagnostics can silently under-report fit quality | Return and use `tolerance` and `weight` in calibration scoring and reports |
 | D-16 | High | Government consumption target inconsistency | `gdp_gov_consumption_G_eur_m` locked target 27,412 vs runtime 46,027.35 and transmission matrix total P3 44,853.2 | Competing definitions of "G" degrade calibration realism | Choose one authoritative definition (National Accounts P3) and align all targets/derivations |
@@ -85,7 +86,7 @@ The table below prioritizes gaps by realism impact.
 | D-23 | Medium | External sector is static in operation | NX and trade components remain fixed under no-policy; no active exogenous ROW shock pipeline | Misses realistic external-demand/import-price disturbances | Add explicit exogenous shock/event mechanism for trade and imported inflation |
 | D-24 | High | Manifesto transparency contract not met in UI | Force graph + tooltips + budget pies exist, but no aggregate->cohort->lever accounting trace journey | Players cannot inspect causality end-to-end as constitution requires | Implement accounting-trace drilldown (Sankey/path explorer with click-through causality) |
 | D-25 | Medium | Accounting trace coefficients can mislead interpretation | Budget trace edges use `0.95*x` patterns while deterministic formulas are identity exact | Visual trace may imply non-identity elasticities | Align accounting-trace coefficients to identity-compatible visual semantics |
-| D-26 | Medium | Simulation ownership conflict risk in C/I/NX | `consumption`, `investment`, and `netExports` are sim-enabled, but deterministic recompute assigns these values from component arithmetic | Future behavioral edges may be silently overwritten | Clarify ownership: either deterministic-only or bridged behavioral inputs at component level |
+| D-26 | Medium | Simulation ownership conflict risk in C/I/NX | `consumption`, `investment`, and `netExports` are sim-enabled, but deterministic recompute assigns these values from component arithmetic | Future behavioral edges may be silently overwritten | Ownership guardrails added (derived nodes now excluded from seed/calibration ownership), but finalize by either disabling simulation ownership for C/I/NX or introducing an explicit behavioral-to-deterministic bridge contract |
 | D-27 | Low | Anchor representation inconsistency in `state.js` | `simulationConfig.baseValues` comment says normalized, but includes raw-like values for some metrics before seeding | Maintenance and onboarding confusion | Keep only normalized anchors or derive all anchors from registry at init |
 
 ## 5. Runtime Evidence Snapshot
@@ -148,7 +149,7 @@ Key out-of-tolerance nodes:
 ### P0: Baseline Coherence and Calibration Integrity
 1. Fix calibration parser to retain and expose `weight` and `tolerance`.
 2. (Done 2026-03-13) Budget is recomputed at initialization so turn 0 equals runtime arithmetic, without extra debt accumulation.
-3. Reconcile single authoritative baseline for `gdp`, `consumption`, `G`, `D62`, and transfer consumption.
+3. (Partially done 2026-03-13) Deterministic ownership enforced for aggregate accounting nodes (including budget stock/flow nodes) and GDP baseline reconciled; remaining baseline reconciliation pending for `consumption`, `G`, `D62`, and transfer consumption.
 4. Remove hard-coded baseline mismatch (`x_raw - 27441.895`) unless mirrored in deterministic baseline source.
 5. Re-estimate or constrain split-flow coefficients and eliminate non-physical negative/>1 shares unless fully justified.
 
