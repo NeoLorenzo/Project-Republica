@@ -71,7 +71,7 @@ The table below prioritizes gaps by realism impact.
 | D-09 | High | `tax_revenue` metric is static | `economy.tax_revenue` is initialized in `state.js` and referenced in required edges but never recomputed in deterministic formulas; policy sensitivity = 0 | Reported tax metric can diverge from actual fiscal mechanics | Deterministically compute tax-revenue ratio or re-scope metric/unit to actual series |
 | D-10 | High | No-policy real activity is static | 60-turn no-policy GDP span in last 12 months = 0; C/I/NX effectively flat | No endogenous business-cycle behavior | Introduce behavioral links from prices/income/labor/expectations into C and I (and optionally NX via exogenous shocks) |
 | D-11 | High | No-policy unemployment and inflation drift from level effects | m0->m60: unemployment 6.50->6.97, inflation 2.70->3.26 with no policy change | Baseline not in equilibrium despite no shocks | Use delta-from-baseline equations (`x - x*`) or add intercept calibration so baseline is stationary |
-| D-12 | Critical | Turn-1 fiscal discontinuity | m0 budget: income 95,000, expenditure 107,000, deficit 12,000; m1 jumps to income 111,113.56, expenditure 113,145.7, deficit 2,032.14 | Large artificial jump breaks realism continuity | Recompute budget at initialization so turn 0 already reflects registry-based arithmetic |
+| D-12 | Resolved | Turn-1 fiscal discontinuity | Resolved on 2026-03-13: initialization now recomputes budget arithmetic at `m0` using runtime budget logic while preserving opening debt stock | Closed: removes artificial `m0 -> m1` fiscal jump | Implemented in `engine/state.js` + `engine/rules.js` (`calculateBudget(..., { applyMonthlyDebtFlow: false })`) |
 | D-13 | Critical | Initialization GDP discontinuity and mismatch | State comment says ~267,000; runtime init computes 311,423.22 | Baseline realism and user trust are compromised | Reconcile base state, calibration targets, and deterministic derivation ownership |
 | D-14 | Critical | Calibration mismatch is severe when properly evaluated | 458 rows checked; 13 out-of-tolerance; 1 out-of-bounds (`gdp_gov_exp_other_eur_m`) | Model is not truly calibrated at start-state for key macro nodes | Recalibrate locked values and deterministic derivations jointly |
 | D-15 | High | Calibration parser drops `tolerance` and `weight` fields | `parseCalibrationTargetsCsv` validates these fields but does not return them in parsed row object | Runtime calibration diagnostics can silently under-report fit quality | Return and use `tolerance` and `weight` in calibration scoring and reports |
@@ -147,7 +147,7 @@ Key out-of-tolerance nodes:
 
 ### P0: Baseline Coherence and Calibration Integrity
 1. Fix calibration parser to retain and expose `weight` and `tolerance`.
-2. Compute budget at initialization so turn 0 equals runtime arithmetic.
+2. (Done 2026-03-13) Budget is recomputed at initialization so turn 0 equals runtime arithmetic, without extra debt accumulation.
 3. Reconcile single authoritative baseline for `gdp`, `consumption`, `G`, `D62`, and transfer consumption.
 4. Remove hard-coded baseline mismatch (`x_raw - 27441.895`) unless mirrored in deterministic baseline source.
 5. Re-estimate or constrain split-flow coefficients and eliminate non-physical negative/>1 shares unless fully justified.

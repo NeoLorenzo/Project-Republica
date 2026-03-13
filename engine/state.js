@@ -1204,6 +1204,9 @@ function initializeGameState() {
     if (typeof recomputeDerivedEconomyMetrics === 'function') {
         recomputeDerivedEconomyMetrics(window.gameState);
     }
+    if (typeof calculateBudget === 'function') {
+        window.gameState.budget = calculateBudget(window.gameState, { applyMonthlyDebtFlow: false });
+    }
     if (typeof recomputeDerivedPopulationMetrics === 'function') {
         recomputeDerivedPopulationMetrics(window.gameState, { applyStockUpdate: false });
     }

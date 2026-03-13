@@ -2027,8 +2027,9 @@ function buildBudgetBreakdown(entries, total) {
     };
 }
 
-// Calculate annualized budget arithmetic and realize only monthly debt accumulation.
-function calculateBudget(state) {
+// Calculate annualized budget arithmetic with optional monthly debt accumulation.
+function calculateBudget(state, options = {}) {
+    const applyMonthlyDebtFlow = options.applyMonthlyDebtFlow !== false;
     ensureNodeRegistryReady();
     const entries = computeBudgetEntries(state);
     const annualTaxIncome = entries
@@ -2051,7 +2052,9 @@ function calculateBudget(state) {
     const annualDeficit = annualExpenditure - annualIncome;
     const monthlyDeficit = annualDeficit / 12;
     const currentDebt = Math.max(0, Number(state?.budget?.debt) || 0);
-    const nextDebt = Math.max(0, currentDebt + monthlyDeficit);
+    const nextDebt = applyMonthlyDebtFlow
+        ? Math.max(0, currentDebt + monthlyDeficit)
+        : currentDebt;
 
     return {
         income: annualIncome,
