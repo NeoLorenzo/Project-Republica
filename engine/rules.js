@@ -31,7 +31,6 @@ let policyFiscalRows = [];
 let pendingPolicyRows = [];
 let pendingMetricRows = [];
 let pendingCalibrationRows = [];
-let governmentConsumptionGCalibrationFactor = 1;
 const ACCOUNTING_TARGET_BLOCKLIST = new Set([
     'income',
     'expenditure',
@@ -344,7 +343,6 @@ function parsePoliciesCsv(csvText) {
         'base_revenue',
         'revenue_slope',
         'gdp_scaled',
-        'gdp_demand_share',
         'revenue_channel'
     ];
     const missingColumns = requiredColumns.filter((column) => !headerIndexByName.has(column));
@@ -377,7 +375,6 @@ function parsePoliciesCsv(csvText) {
         const max = parseRequiredFiniteNumber(getCsvCell(row, headerIndexByName, 'max'), 'max', rowNumber, sourceFile);
         const graphEnabled = parseYesNo(getCsvCell(row, headerIndexByName, 'graph_enabled'), 'graph_enabled', rowNumber, sourceFile);
         const gdpScaled = parseYesNo(getCsvCell(row, headerIndexByName, 'gdp_scaled'), 'gdp_scaled', rowNumber, sourceFile);
-        const gdpDemandShare = parseRequiredFiniteNumber(getCsvCell(row, headerIndexByName, 'gdp_demand_share'), 'gdp_demand_share', rowNumber, sourceFile);
         const revenueChannel = getCsvCell(row, headerIndexByName, 'revenue_channel').toLowerCase();
         const baseCost = parseRequiredFiniteNumber(getCsvCell(row, headerIndexByName, 'base_cost'), 'base_cost', rowNumber, sourceFile);
         const costSlope = parseRequiredFiniteNumber(getCsvCell(row, headerIndexByName, 'cost_slope'), 'cost_slope', rowNumber, sourceFile);
@@ -399,9 +396,6 @@ function parsePoliciesCsv(csvText) {
         if (max < min) throw new Error(`Invalid bounds on ${sourceFile} row ${rowNumber}: max must be >= min.`);
         if (initialValue < min || initialValue > max) {
             throw new Error(`Initial value for "${policyId}" must be within [min,max] on ${sourceFile} row ${rowNumber}.`);
-        }
-        if (gdpDemandShare < 0 || gdpDemandShare > 1) {
-            throw new Error(`Invalid gdp_demand_share "${gdpDemandShare}" on ${sourceFile} row ${rowNumber}: expected value in [0,1].`);
         }
         const hasRevenue = baseRevenue !== 0 || revenueSlope !== 0;
         if (revenueChannel === 'tax' && !hasRevenue) {
@@ -440,7 +434,6 @@ function parsePoliciesCsv(csvText) {
             baseRevenue,
             revenueSlope,
             gdpScaled,
-            gdpDemandShare,
             revenueChannel
         });
     }
@@ -551,8 +544,7 @@ function parseMetricsCsv(csvText) {
             costSlope: 0,
             baseRevenue: 0,
             revenueSlope: 0,
-            gdpScaled: true,
-            gdpDemandShare: 0
+            gdpScaled: true
         });
     }
 
@@ -677,32 +669,6 @@ function applyCalibrationLockedValues(parsedRows, calibrationRows) {
     });
 }
 
-function recomputeGovernmentConsumptionGCalibrationFactor() {
-    const governmentConsumptionGNode = nodeRegistryById.get('gdp_gov_consumption_G_eur_m')
-        || nodeRegistryById.get('government_expenditure');
-    if (!governmentConsumptionGNode || !Number.isFinite(governmentConsumptionGNode.initialValue)) {
-        governmentConsumptionGCalibrationFactor = 1;
-        return;
-    }
-
-    const baselineGovernmentConsumptionG = policyFiscalRows.reduce((sum, row) => {
-        if (!Number.isFinite(row.gdpDemandShare) || row.gdpDemandShare === 0) return sum;
-        const hasRange = Number.isFinite(row.min) && Number.isFinite(row.max) && row.max > row.min;
-        const intensity = hasRange
-            ? clamp01((row.initialValue - row.min) / (row.max - row.min))
-            : 0;
-        const baselineCost = row.baseCost + (row.costSlope * intensity);
-        return sum + (baselineCost * row.gdpDemandShare);
-    }, 0);
-
-    if (!Number.isFinite(baselineGovernmentConsumptionG) || baselineGovernmentConsumptionG <= 0) {
-        governmentConsumptionGCalibrationFactor = 1;
-        return;
-    }
-    const scale = governmentConsumptionGNode.initialValue / baselineGovernmentConsumptionG;
-    governmentConsumptionGCalibrationFactor = Number.isFinite(scale) && scale > 0 ? scale : 1;
-}
-
 function assertNodeRegistryParity(parsedRows) {
     const baseState = getNodeRegistryValidationState();
     if (!baseState) {
@@ -756,7 +722,6 @@ function rebuildNodeRegistryIndexes(parsedRows) {
             baseRevenue: row.baseRevenue,
             revenueSlope: row.revenueSlope,
             gdpScaled: row.gdpScaled,
-            gdpDemandShare: Number.isFinite(row.gdpDemandShare) ? row.gdpDemandShare : 0,
             revenueChannel: row.revenueChannel
         }));
 
@@ -775,7 +740,6 @@ function rebuildNodeRegistryIndexes(parsedRows) {
     if (Object.keys(metricNodeDefaults).length === 0) {
         throw new Error('metrics.csv must define at least one simulation_enabled metric node.');
     }
-    recomputeGovernmentConsumptionGCalibrationFactor();
 }
 
 function resetNodeRegistryData() {
@@ -790,7 +754,6 @@ function resetNodeRegistryData() {
     pendingPolicyRows = [];
     pendingMetricRows = [];
     pendingCalibrationRows = [];
-    governmentConsumptionGCalibrationFactor = 1;
 }
 
 function ensureNodeRegistryReady() {
@@ -1601,14 +1564,11 @@ function projectOneStepRawMetrics(state) {
 
     const projectedGovConsumptionGFromSplitFlow = projectedGovSplitFlowTotals?.gdp_gov_consumption_G_eur_m;
     const projectedGovConsumptionGFromP3 = getGovExpTransactionTotal(state, 'p3').total;
-    const projectedGovConsumptionGFromPolicy = calculateGovernmentConsumptionGFromPolicy(state, projectedBudgetEntries);
     const projectedGovConsumptionG = Number.isFinite(projectedGovConsumptionGFromSplitFlow)
         ? projectedGovConsumptionGFromSplitFlow
         : (Number.isFinite(projectedGovConsumptionGFromP3)
         ? projectedGovConsumptionGFromP3
-        : (Number.isFinite(projectedGovConsumptionGFromPolicy)
-        ? projectedGovConsumptionGFromPolicy
-        : (Number(getStateValueByNodeId(state, 'gdp_gov_consumption_G_eur_m')) || 0)));
+        : (Number(getStateValueByNodeId(state, 'gdp_gov_consumption_G_eur_m')) || 0));
     const projectedGovOtherResidual = Number.isFinite(projectedGovSplitFlowTotals?.gdp_gov_exp_other_eur_m)
         ? projectedGovSplitFlowTotals.gdp_gov_exp_other_eur_m
         : (Number.isFinite(projectedGovBudgetTotalFromTe)
@@ -1716,19 +1676,6 @@ function computeBudgetEntries(state) {
             revenueChannel: row.revenueChannel || 'none'
         };
     });
-}
-
-function calculateGovernmentConsumptionGFromPolicy(state, entries) {
-    const effectiveEntries = Array.isArray(entries) ? entries : computeBudgetEntries(state);
-    const gdpDemandShareByPolicy = new Map(
-        policyFiscalRows.map((row) => [row.policyId, Number.isFinite(row.gdpDemandShare) ? row.gdpDemandShare : 0])
-    );
-    const governmentConsumptionGValue = effectiveEntries.reduce((sum, entry) => {
-        const share = gdpDemandShareByPolicy.get(entry.policyId) || 0;
-        return sum + (entry.costValue * share);
-    }, 0);
-    const calibratedValue = governmentConsumptionGValue * governmentConsumptionGCalibrationFactor;
-    return Number.isFinite(calibratedValue) ? calibratedValue : 0;
 }
 
 function sumFiniteNodeValues(state, nodeIds) {
@@ -2186,14 +2133,11 @@ function recomputeDerivedEconomyMetrics(state) {
 
     const govConsumptionGFromSplitFlow = govSplitFlowTotals?.gdp_gov_consumption_G_eur_m;
     const govConsumptionGFromP3 = getGovExpTransactionTotal(state, 'p3').total;
-    const govConsumptionGFromPolicy = calculateGovernmentConsumptionGFromPolicy(state, budgetEntries);
     const govConsumptionGValue = Number.isFinite(govConsumptionGFromSplitFlow)
         ? govConsumptionGFromSplitFlow
         : (Number.isFinite(govConsumptionGFromP3)
         ? govConsumptionGFromP3
-        : (Number.isFinite(govConsumptionGFromPolicy)
-        ? govConsumptionGFromPolicy
-        : (Number(getStateValueByNodeId(state, 'gdp_gov_consumption_G_eur_m')) || 0)));
+        : (Number(getStateValueByNodeId(state, 'gdp_gov_consumption_G_eur_m')) || 0));
     const govOtherResidualValue = Number.isFinite(govSplitFlowTotals?.gdp_gov_exp_other_eur_m)
         ? govSplitFlowTotals.gdp_gov_exp_other_eur_m
         : (Number.isFinite(govBudgetTotalFromTe)

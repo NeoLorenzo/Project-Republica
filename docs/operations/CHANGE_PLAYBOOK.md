@@ -14,7 +14,7 @@ Use this sequence for safe model changes.
 When changing GDP mechanics:
 - preserve deterministic ownership (`C+I+G+NX`)
 - update GDP trace edges in `relationships.csv`
-- update policy `gdp_demand_share` values in `policies.csv`
+- keep `gdp_gov_consumption_G_eur_m` sourced from split-flow/COFOG `P3` accounting totals
 - revalidate identity tolerance and debt ratio consistency
 
 ## Edge Change Guidance

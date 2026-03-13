@@ -8,7 +8,8 @@ Authoritative runtime registries:
 ### Policy Nodes (Exogenous)
 - Player-controlled policy levers.
 - Stored via `policies.csv` `storage_path` entries under `state.policies.*`.
-- Include fiscal coefficients and `gdp_demand_share` used by deterministic government-demand mapping.
+- Include fiscal coefficients used for deterministic budget entry calculation.
+- Legacy `gdp_demand_share` column values, if present in `policies.csv`, are ignored by runtime.
 
 ### Simulation Metric Nodes (Endogenous)
 - Tracked under `state.simulation.nodes` with normalized values.
@@ -33,7 +34,7 @@ GDP is deterministic and identity-owned:
 Where:
 - `consumption`, `investment`, `netExports` are million-EUR component nodes.
 - `government_expenditure` is deterministic total government expenditure (COFOG-mapped aggregate).
-- `gdp_gov_consumption_G_eur_m` is deterministic GDP component `G`, computed from policy expenditure entries using `gdp_demand_share`.
+- `gdp_gov_consumption_G_eur_m` is deterministic GDP component `G`, sourced from accounting totals (split-flow `P3` first, then COFOG `p3` aggregate, with node-value fallback only if accounting sources are unavailable).
 
 ## Normalization Model
 - Simulation-enabled metric nodes use `min/max` normalization.

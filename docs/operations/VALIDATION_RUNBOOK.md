@@ -4,7 +4,7 @@ Use this after edge/data/engine changes.
 
 ## 1. Registry Integrity
 Check:
-- `policies.csv` schema valid, including required `gdp_demand_share` in `[0,1]`
+- `policies.csv` schema valid
 - `metrics.csv` schema valid
 - policy IDs unique, metric IDs unique
 - no cross-file ID collisions
@@ -22,7 +22,6 @@ Check:
 - `loadPoliciesCsv()` succeeds
 - `loadMetricsCsv()` succeeds
 - `loadRelationshipsCsv()` succeeds
-- missing/invalid `gdp_demand_share` fails
 - behavioral edge with `sign=mixed` fails
 - missing required GDP identity trace edges fails
 
