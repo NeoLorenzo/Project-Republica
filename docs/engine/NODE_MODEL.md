@@ -14,7 +14,7 @@ Authoritative runtime registries:
 ### Simulation Metric Nodes (Endogenous)
 - Tracked under `state.simulation.nodes` with normalized values.
 - Updated via inbound behavioral edge contributions plus inertia.
-- Examples include `consumption`, `investment`, `netExports`, labor/inflation/social metrics.
+- Examples include labor/inflation/social metrics.
 
 ### Deterministic Metric Nodes (Non-Simulated)
 - Defined in `metrics.csv` with `simulation_enabled=no`.
