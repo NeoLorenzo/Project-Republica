@@ -1012,12 +1012,6 @@ const portugalState = {
     // Population metrics - Portugal specific
     population: {
         total: 10639726, // 10.64 million (INE 2023 resident estimate, baseline Jan 2024)
-        happiness: 58, // Lower due to economic pressures
-        health: 65, // Strained by SNS issues
-        education: 62, // Affected by teacher strikes
-        safety: 78, // Still relatively good
-        youthIndependence: 35, // Low due to housing crisis
-        rentBurden: 45, // High rent burden on households
 
         // Calibration metrics (population/social)
         infant_mortality_rate: 2.5,
@@ -1106,7 +1100,6 @@ const portugalState = {
         housingCrisis: {
             severity: 0.8, // High severity (0-1 scale)
             rentPrices: 0.9, // Very high rent pressure
-            youthIndependence: 0.7, // Low youth independence
             alRegulation: 0.6 // Local accommodation pressure
         },
         snsStrain: {
@@ -1292,12 +1285,6 @@ const portugalState = {
         baseValues: {
             unemployment_rate: 0.26,
             inflation_consumer_prices: 0.23,
-            happiness: 0.58,
-            health: 0.65,
-            education: 0.62,
-            safety: 0.78,
-            youthIndependence: 0.35,
-            rentBurden: 0.45,
             consumption: 181033.700,
             investment: 0.42,
             netExports: 0.4083,

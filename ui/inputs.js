@@ -36,21 +36,20 @@ function previewPolicyChange(policyId, value) {
 
     // Calculate preview effects
     const previewBudget = calculateBudget(state);
-    const previewPopulation = calculatePopulationMetrics(state);
+    calculatePopulationMetrics(state);
 
     // Update preview display
-    updatePreviewDisplay(previewBudget, previewPopulation);
+    updatePreviewDisplay(previewBudget);
 
     // Restore original value
     updatePolicyValue(policyId, originalValue);
 }
 
 // Update preview display in modal
-function updatePreviewDisplay(budget, population) {
+function updatePreviewDisplay(budget) {
     const previewIncome = document.getElementById('preview-income');
     const previewExpenditure = document.getElementById('preview-expenditure');
     const previewDeficit = document.getElementById('preview-deficit');
-    const previewHappiness = document.getElementById('preview-happiness');
 
     const roundedIncome = Math.round(budget.income);
     const roundedExpenditure = Math.round(budget.expenditure);
@@ -65,7 +64,6 @@ function updatePreviewDisplay(budget, population) {
         previewDeficit.textContent = deficitText;
         previewDeficit.style.color = budget.deficit >= 0 ? 'var(--negative)' : 'var(--positive)';
     }
-    if (previewHappiness) previewHappiness.textContent = `${Math.round(population.happiness)}%`;
 }
 
 // Handle keyboard shortcuts

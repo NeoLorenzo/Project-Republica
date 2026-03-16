@@ -87,7 +87,6 @@ The simulation still behaves as a reliable accounting machine, but current activ
 
 ### 5.2 Active Behavioral Edge Set
 - `central_bank_policy_rate -> unemployment_rate`
-- `rentBurden -> real_household_disposable_income`
 - `inflation_consumer_prices -> real_household_disposable_income`
 
 ### 5.3 No-Policy Trajectory (60-turn)

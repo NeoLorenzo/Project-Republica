@@ -73,10 +73,7 @@ function getPerformanceIndicators(state) {
             debtRatio: ((state.budget.debt / state.economy.gdp) * 100).toFixed(1) + '%'
         },
         population: {
-            happiness: state.population.happiness + '%',
-            health: state.population.health + '%',
-            education: state.population.education + '%',
-            safety: state.population.safety + '%'
+            total: Math.round(state.population.total).toLocaleString()
         },
         budget: {
             deficit: '€' + state.budget.deficit.toLocaleString() + 'M',

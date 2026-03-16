@@ -119,23 +119,11 @@ function showMetricTooltip(event, node, state) {
         case 'gdp':
             details = `Growth: ${(state.economy.gdpGrowth * 100).toFixed(1)}% annually`;
             break;
-        case 'health':
-            details = `SNS Strain: ${(state.currentEvents.snsStrain.severity * 100).toFixed(0)}%`;
-            break;
-        case 'happiness':
-            details = `Youth Independence: ${state.population.youthIndependence}%`;
-            break;
         case 'budget.debt':
             details = `Debt-to-GDP: ${getNodeNumber(state, 'debt_to_gdp', state?.economy?.debt_to_gdp).toFixed(1)}%`;
             break;
         case 'debt_to_gdp':
             details = 'Derived from debt and GDP';
-            break;
-        case 'education':
-            details = `Teacher Strikes: ${(state.currentEvents.educationStrikes.severity * 100).toFixed(0)}%`;
-            break;
-        case 'safety':
-            details = `Police Funding: ${getPolicyValue('policeSpending')}%`;
             break;
         case 'unemployment_rate':
             details = 'Labor market pressure';
@@ -178,12 +166,6 @@ function showMetricTooltip(event, node, state) {
             break;
         case 'household_savings_from_transfers_eur_m':
             details = 'Transfer-driven household savings = D62 * (1 - MPC)';
-            break;
-        case 'rentBurden':
-            details = 'Household rent pressure index';
-            break;
-        case 'youthIndependence':
-            details = 'Young adults able to live independently';
             break;
     }
 

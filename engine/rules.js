@@ -2532,15 +2532,8 @@ function calculateBudgetBreakdown(state) {
 }
 
 function calculatePopulationMetrics(state) {
-    const projected = projectOneStepRawMetrics(state);
-    return {
-        happiness: projected.happiness,
-        health: projected.health,
-        education: projected.education,
-        safety: projected.safety,
-        youthIndependence: projected.youthIndependence,
-        rentBurden: projected.rentBurden
-    };
+    void state;
+    return {};
 }
 
 function calculateEconomicIndicators(state) {
