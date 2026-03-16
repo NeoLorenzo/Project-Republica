@@ -41,6 +41,8 @@ function getPolicySliderStep(unit) {
             return '0.1';
         case 'decimal_2':
             return '0.01';
+        case 'rate_percent_2':
+            return '0.0001';
         case 'eur_int':
             return '10';
         case 'int':

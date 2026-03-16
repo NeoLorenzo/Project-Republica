@@ -1286,6 +1286,26 @@ function getRelationshipRules() {
     return relationshipEdges.map((edge) => ({ ...edge }));
 }
 
+function getExecutableAccountingTargetSet(accountingEdges = []) {
+    const inboundByTarget = new Map();
+    accountingEdges.forEach((edge) => {
+        const inbound = inboundByTarget.get(edge.target) || [];
+        inbound.push(edge);
+        inboundByTarget.set(edge.target, inbound);
+    });
+
+    const executableTargets = new Set();
+    inboundByTarget.forEach((inboundEdges, targetId) => {
+        if (!Array.isArray(inboundEdges) || inboundEdges.length === 0) return;
+        const allInboundUseRaw = inboundEdges.every((edge) => edgeEquationUsesRawInput(edge));
+        if (!allInboundUseRaw) return;
+        if (!shouldExecuteAccountingTarget(targetId)) return;
+        executableTargets.add(targetId);
+    });
+
+    return executableTargets;
+}
+
 function getGraphLinksFromRules() {
     if (!isRelationshipDataReady()) return [];
     return relationshipEdges.map((edge) => ({
@@ -1480,6 +1500,158 @@ function computeNextSimulationNodes(state, nodeSnapshot) {
         nextNodes[nodeId] = { current: nextCurrent, target };
     });
     return nextNodes;
+}
+
+function edgeEquationUsesRawInput(edge) {
+    return /\bx_raw\b/i.test(String(edge?.equation || ''));
+}
+
+function shouldExecuteAccountingTarget(targetId) {
+    const targetRow = nodeRegistryById.get(targetId);
+    if (!targetRow) return false;
+    if (targetRow.simulationEnabled) return false;
+    if (isAccountingDerivedNodeId(targetId)) return false;
+    const storagePath = String(targetRow.storagePath || '');
+    if (storagePath.startsWith('population.')) return false;
+    return true;
+}
+
+function buildAccountingTraceTargetOrder(accountingTargets, accountingEdges) {
+    const targetIds = [...accountingTargets].sort((a, b) => a.localeCompare(b));
+    if (targetIds.length <= 1) return targetIds;
+
+    const indegreeByTarget = new Map(targetIds.map((targetId) => [targetId, 0]));
+    const outgoingBySource = new Map();
+
+    accountingEdges.forEach((edge) => {
+        if (!accountingTargets.has(edge.target)) return;
+        if (!accountingTargets.has(edge.source)) return;
+        const nextTargets = outgoingBySource.get(edge.source) || [];
+        nextTargets.push(edge.target);
+        outgoingBySource.set(edge.source, nextTargets);
+        indegreeByTarget.set(edge.target, (indegreeByTarget.get(edge.target) || 0) + 1);
+    });
+
+    const queue = targetIds
+        .filter((targetId) => (indegreeByTarget.get(targetId) || 0) === 0)
+        .sort((a, b) => a.localeCompare(b));
+    const ordered = [];
+
+    while (queue.length > 0) {
+        const sourceId = queue.shift();
+        ordered.push(sourceId);
+        const nextTargets = outgoingBySource.get(sourceId) || [];
+        nextTargets.forEach((targetId) => {
+            const nextIndegree = (indegreeByTarget.get(targetId) || 0) - 1;
+            indegreeByTarget.set(targetId, nextIndegree);
+            if (nextIndegree === 0) {
+                queue.push(targetId);
+                queue.sort((a, b) => a.localeCompare(b));
+            }
+        });
+    }
+
+    if (ordered.length < targetIds.length) {
+        const orderedSet = new Set(ordered);
+        targetIds
+            .filter((targetId) => !orderedSet.has(targetId))
+            .sort((a, b) => a.localeCompare(b))
+            .forEach((targetId) => ordered.push(targetId));
+    }
+
+    return ordered;
+}
+
+function isTaxRatePolicySourceId(sourceId) {
+    return typeof sourceId === 'string' && sourceId.startsWith('tax_rate_tax_pt_');
+}
+
+function isTaxLeafTargetId(targetId) {
+    return typeof targetId === 'string'
+        && targetId.startsWith('tax_pt_')
+        && /_c\d+_eur_m$/i.test(targetId);
+}
+
+function computeAccountingTargetSumFromInboundEdges(state, inboundEdges) {
+    return inboundEdges.reduce((sum, edge) => {
+        const context = buildEdgeEvaluationContext(state, edge);
+        const contribution = evaluateEdgeContribution(edge, context, { forSimulation: false });
+        return sum + (Number.isFinite(contribution) ? contribution : 0);
+    }, 0);
+}
+
+// Deterministic tax formula pass for mapped tax leaves: tax = tax_base * tax_rate.
+// This only activates when a target has exactly one base accounting edge and one tax-rate accounting edge.
+function tryComputeTaxRateBaseProductValue(state, targetId, inboundEdges) {
+    if (!isTaxLeafTargetId(targetId)) return null;
+    if (!Array.isArray(inboundEdges) || inboundEdges.length !== 2) return null;
+
+    const rateEdges = inboundEdges.filter((edge) => isTaxRatePolicySourceId(edge.source));
+    const baseEdges = inboundEdges.filter((edge) => !isTaxRatePolicySourceId(edge.source));
+    if (rateEdges.length !== 1 || baseEdges.length !== 1) return null;
+
+    const rateContext = buildEdgeEvaluationContext(state, rateEdges[0]);
+    const baseContext = buildEdgeEvaluationContext(state, baseEdges[0]);
+    const rateValue = evaluateEdgeContribution(rateEdges[0], rateContext, { forSimulation: false });
+    const baseValue = evaluateEdgeContribution(baseEdges[0], baseContext, { forSimulation: false });
+    if (!Number.isFinite(rateValue) || !Number.isFinite(baseValue)) return null;
+
+    const taxValue = baseValue * rateValue;
+    return Number.isFinite(taxValue) ? taxValue : null;
+}
+
+// Apply executable accounting-trace edges so visual accounting topology and runtime state stay aligned.
+// Only targets with all inbound accounting equations referencing x_raw are executed in this pass.
+function applyAccountingTraceState(state) {
+    if (!state || !isRelationshipDataReady()) {
+        return {
+            appliedTargetCount: 0,
+            executableTargetCount: 0,
+            skippedTargetCount: 0
+        };
+    }
+
+    const accountingEdges = relationshipEdges.filter((edge) => edge.edgeMode === EDGE_MODE_ACCOUNTING);
+    if (accountingEdges.length === 0) {
+        return {
+            appliedTargetCount: 0,
+            executableTargetCount: 0,
+            skippedTargetCount: 0
+        };
+    }
+
+    const inboundByTarget = new Map();
+    accountingEdges.forEach((edge) => {
+        const inbound = inboundByTarget.get(edge.target) || [];
+        inbound.push(edge);
+        inboundByTarget.set(edge.target, inbound);
+    });
+    const executableTargets = getExecutableAccountingTargetSet(accountingEdges);
+
+    const orderedTargets = buildAccountingTraceTargetOrder(executableTargets, accountingEdges);
+    const skippedTargetCount = Math.max(0, inboundByTarget.size - orderedTargets.length);
+    let appliedTargetCount = 0;
+
+    orderedTargets.forEach((targetId) => {
+        const targetRow = nodeRegistryById.get(targetId);
+        if (!targetRow) return;
+        const inboundEdges = inboundByTarget.get(targetId) || [];
+        if (inboundEdges.length === 0) return;
+        const multiplicativeTaxValue = tryComputeTaxRateBaseProductValue(state, targetId, inboundEdges);
+        const nextValue = Number.isFinite(multiplicativeTaxValue)
+            ? multiplicativeTaxValue
+            : computeAccountingTargetSumFromInboundEdges(state, inboundEdges);
+        if (!Number.isFinite(nextValue)) return;
+        if (setValueAtPath(state, targetRow.storagePath, nextValue)) {
+            appliedTargetCount++;
+        }
+    });
+
+    return {
+        appliedTargetCount,
+        executableTargetCount: orderedTargets.length,
+        skippedTargetCount
+    };
 }
 
 function syncStateFromSimulation(state) {

@@ -133,6 +133,8 @@ function formatMetricValueByUnit(value, unit) {
             return `${Math.round(value)}%`;
         case 'percent_1':
             return `${value.toFixed(1)}%`;
+        case 'rate_percent_2':
+            return `${(value * 100).toFixed(2)}%`;
         case 'decimal_2':
             return value.toFixed(2);
         case 'decimal_1':

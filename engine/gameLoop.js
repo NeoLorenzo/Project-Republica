@@ -20,6 +20,9 @@ function processNextTurn() {
     if (typeof stepRelationshipSimulation === 'function') {
         stepRelationshipSimulation(state);
     }
+    if (typeof applyAccountingTraceState === 'function') {
+        applyAccountingTraceState(state);
+    }
 
     // Recalculate budget and derived economy metrics from updated state.
     const newBudget = calculateBudget(state);

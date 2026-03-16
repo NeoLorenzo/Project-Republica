@@ -16,6 +16,8 @@ This repository uses decentralized documentation. `README.md` is the front door;
 - `docs/engine/TURN_PIPELINE.md`
 - `docs/engine/NODE_MODEL.md`
 - `docs/engine/RELATIONSHIP_REGISTRY_SPEC.md`
+- `docs/engine/TAX_BASE_CALIBRATION_STAGE1.md`
+- `docs/engine/TAX_BASE_PROXY_STAGE2.md`
 - `docs/operations/VALIDATION_RUNBOOK.md`
 - `engine/policies.csv`
 - `engine/metrics.csv`
@@ -31,6 +33,8 @@ This repository uses decentralized documentation. `README.md` is the front door;
 - `docs/engine/TURN_PIPELINE.md`
 - `docs/engine/NODE_MODEL.md`
 - `docs/engine/RELATIONSHIP_REGISTRY_SPEC.md`
+- `docs/engine/TAX_BASE_CALIBRATION_STAGE1.md`
+- `docs/engine/TAX_BASE_PROXY_STAGE2.md`
 - `docs/engine/POLICY_NODE_CONSTRAINTS.md`
 - `docs/data/CALIBRATION_TARGETS_SPEC.md`
 - `docs/data/DATA_QUALITY_POLICY.md`
